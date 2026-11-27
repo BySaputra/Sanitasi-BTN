@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Griya Sehati – Smart Water &amp; Sanitation Monitoring</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.446.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar" aria-label="Navigasi Utama">
+      <div class="sidebar-brand">
+        <div class="brand-mark">
+          <i data-lucide="droplets"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Griya Sehati</h1>
+          <p>Rumah sehat, keluarga tenang.</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Pemantauan</div>
+        <button class="nav-item active" data-page="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-page="tandon">
+          <i data-lucide="database"></i>
+          <span>Monitoring Tandon</span>
+        </button>
+        <button class="nav-item" data-page="kualitas">
+          <i data-lucide="flask-conical"></i>
+          <span>Kualitas Air</span>
+        </button>
+        <button class="nav-item" data-page="sanitasi">
+          <i data-lucide="shield-alert"></i>
+          <span>Monitoring Sanitasi</span>
+        </button>
+
+        <div class="nav-section-label">Analitik &amp; Sistem</div>
+        <button class="nav-item" data-page="riwayat">
+          <i data-lucide="history"></i>
+          <span>Riwayat Data</span>
+        </button>
+        <button class="nav-item" data-page="pengaturan">
+          <i data-lucide="settings"></i>
+          <span>Pengaturan</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sim-mini-status">
+          <span class="sim-mini-dot">
+            <span id="sidebar-sim-dot" class="dot dot-success"></span>
+            <span id="sidebar-sim-label">Simulasi Berjalan</span>
+          </span>
+          <span class="tabular-nums" id="sidebar-interval-label">2.5s</span>
+        </div>
+        <button id="btn-open-sim-sidebar" class="btn btn-sm" style="width: 100%;">
+          <i data-lucide="sliders-horizontal" style="width: 14px; height: 14px;"></i>
+          <span>Simulation Control</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper">
+      <!-- Top Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Buka Menu">
+            <i data-lucide="menu" style="width: 18px; height: 18px;"></i>
+          </button>
+          <div class="page-heading">
+            <h2 id="topbar-title">Selamat datang di Griya Sehati</h2>
+            <div class="subtitle tabular-nums" id="topbar-datetime">--</div>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <span id="header-device-badge" class="pill-badge online">
+            <span class="dot dot-success"></span>
+            <span id="header-device-text">Online</span>
+          </span>
+          <span class="pill-badge sim-mode hide-sm">
+            <i data-lucide="cpu" style="width: 13px; height: 13px;"></i>
+            <span>Simulation Mode</span>
+          </span>
+          <button id="btn-open-sim" class="icon-btn primary-outline" title="Buka Panel Kontrol Simulasi">
+            <i data-lucide="sliders-horizontal" style="width: 16px; height: 16px;"></i>
+            <span class="btn-text-hide-sm">Simulation Control</span>
+          </button>
+          <button id="btn-open-notif" class="icon-btn" title="Notifikasi Sistem" aria-label="Notifikasi">
+            <i data-lucide="bell" style="width: 16px; height: 16px;"></i>
+            <span id="notif-badge" class="notif-count hidden">0</span>
+          </button>
+          <div class="user-chip">
+            <div class="user-avatar">GS</div>
+            <div class="user-meta">
+              <strong>Unit B-12</strong>
+              <span>BTN Housingpreneur</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Views -->
+      <main class="content-area">
+        <!-- ============================================================
+             PAGE 1: DASHBOARD OVERVIEW
+             ============================================================ -->
+        <section id="page-dashboard" class="page-view active">
+          <div class="section-header">
+            <div>
+              <h3>Ringkasan Kondisi Rumah</h3>
+              <p>Pemantauan terpadu tandon air bersih dan tangki septik rumah tangga secara real-time (simulasi).</p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-sm" id="dash-quick-play">
+                <i data-lucide="pause" style="width: 14px; height: 14px;"></i>
+                <span id="dash-quick-play-text">Jeda Simulasi</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Primary KPI Cards -->
+          <div class="grid-4">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon"><i data-lucide="waves" style="width: 18px; height: 18px;"></i></div>
+                  <div>
+                    <h4 class="card-title">Ketinggian Air</h4>
+                    <p class="card-subtitle">Sensor Kapasitif 4-Titik</p>
+                  </div>
+                </div>
+                <span id="kpi-water-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="kpi-water-pct">75</span><span class="kpi-unit">%</span></div>
+              <div class="kpi-meta tabular-nums">
+                <span id="kpi-water-vol">Estimasi ~750 L / 1.000 L</span>
+                <span id="kpi-water-tier">Titik 75% aktif</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon"><i data-lucide="flask-conical" style="width: 18px; height: 18px;"></i></div>
+                  <div>
+                    <h4 class="card-title">Kualitas Air</h4>
+                    <p class="card-subtitle">Indikator Fisik-Kimia</p>
+                  </div>
+                </div>
+                <span id="kpi-quality-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="kpi-turbidity">1.4</span><span class="kpi-unit">NTU</span></div>
+              <div class="kpi-meta tabular-nums">
+                <span>TDS: <strong id="kpi-tds">185</strong> ppm</span>
+                <span>pH: <strong id="kpi-ph">7.2</strong></span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon"><i data-lucide="shield-alert" style="width: 18px; height: 18px;"></i></div>
+                  <div>
+                    <h4 class="card-title">Tangki Septik</h4>
+                    <p class="card-subtitle">Kapasitas &amp; Emisi Gas</p>
+                  </div>
+                </div>
+                <span id="kpi-septic-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="kpi-septic-pct">42</span><span class="kpi-unit">%</span></div>
+              <div class="kpi-meta tabular-nums">
+                <span id="kpi-septic-vol">Estimasi 840 L</span>
+                <span>H₂S: <strong id="kpi-septic-h2s">1.8</strong> ppm</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon"><i data-lucide="cpu" style="width: 18px; height: 18px;"></i></div>
+                  <div>
+                    <h4 class="card-title">Status Sistem</h4>
+                    <p class="card-subtitle">Node ESP32-GS01</p>
+                  </div>
+                </div>
+                <span id="kpi-sys-badge" class="status-badge status-normal">Online</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="kpi-sensors-active">10</span><span class="kpi-unit">/ 10 Aktif</span></div>
+              <div class="kpi-meta tabular-nums">
+                <span>Pembaruan terakhir</span>
+                <strong id="kpi-last-update">--:--:--</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Charts -->
+          <div class="grid-3">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Tren Ketinggian Air</h4>
+                  <p class="card-subtitle">Persentase level tandon (%)</p>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="chart-dash-level"></canvas>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Tren Penggunaan Air</h4>
+                  <p class="card-subtitle">Debit masuk vs keluar (L/min)</p>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="chart-dash-flow"></canvas>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Tren Kualitas Air</h4>
+                  <p class="card-subtitle">Turbidity (NTU) &amp; TDS (ppm)</p>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="chart-dash-quality"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Notifications on Dashboard -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h4 class="card-title">Peringatan &amp; Aktivitas Terbaru</h4>
+                <p class="card-subtitle">Ringkasan notifikasi kondisi sensor dan ambang batas</p>
+              </div>
+              <button class="btn btn-sm" id="dash-view-all-notif">Lihat Semua</button>
+            </div>
+            <div id="dash-notif-list" class="notif-list"></div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             PAGE 2: MONITORING TANDON AIR
+             ============================================================ -->
+        <section id="page-tandon" class="page-view">
+          <div class="section-header">
+            <div>
+              <h3>Monitoring Tandon Air</h3>
+              <p>Deteksi level air dengan sensor kapasitif eksternal 4-titik dan pemantauan debit inlet/outlet.</p>
+            </div>
+          </div>
+
+          <div class="notice-banner info">
+            <i data-lucide="info"></i>
+            <div>
+              <strong>Metode Pengukuran Diskrit:</strong> Sensor kapasitif dipasang pada 4 titik ketinggian dinding luar tandon (25%, 50%, 75%, 100%). Pembacaan sistem merepresentasikan rentang ketinggian berdasarkan titik sensor aktif, dan volume air ditampilkan sebagai <strong>nilai estimasi</strong>.
+            </div>
+          </div>
+
+          <div class="grid-2-1">
+            <!-- Water Level Card -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Visualisasi &amp; Status Level Tandon</h4>
+                  <p class="card-subtitle">Kapasitas maksimal terkonfigurasi: <span id="tandon-max-cap-label">1.000</span> L</p>
+                </div>
+                <span id="tandon-status-badge" class="status-badge status-normal">Normal</span>
+              </div>
+
+              <div class="tank-layout">
+                <div class="tank-visual-wrap">
+                  <div class="tank-cylinder" aria-label="Visualisasi Tangki Air">
+                    <div class="tank-level-line" style="bottom: 25%;"></div>
+                    <div class="tank-level-line" style="bottom: 50%;"></div>
+                    <div class="tank-level-line" style="bottom: 75%;"></div>
+                    <div id="tandon-water-fill" class="tank-water" style="height: 75%;">
+                      <div class="tank-water-surface"></div>
+                    </div>
+                    <div class="tank-level-label">
+                      <strong class="tabular-nums" id="tandon-visual-pct">75%</strong>
+                    </div>
+                  </div>
+
+                  <div class="tank-sensors-rail" aria-label="Titik Sensor Kapasitif">
+                    <div class="sensor-node-pill active" id="cap-node-25">
+                      <span class="dot dot-success"></span>
+                      <span>25%</span>
+                    </div>
+                    <div class="sensor-node-pill active" id="cap-node-50">
+                      <span class="dot dot-success"></span>
+                      <span>50%</span>
+                    </div>
+                    <div class="sensor-node-pill active" id="cap-node-75">
+                      <span class="dot dot-success"></span>
+                      <span>75%</span>
+                    </div>
+                    <div class="sensor-node-pill inactive" id="cap-node-100">
+                      <span class="dot dot-neutral"></span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tank-metrics-grid">
+                  <div class="metric-box">
+                    <label>Level Terdeteksi (Diskrit)</label>
+                    <div class="val tabular-nums" id="tandon-detected-pct">75%</div>
+                    <div class="sub" id="tandon-sensor-range">Rentang: 75% – 99%</div>
+                  </div>
+                  <div class="metric-box">
+                    <label>Estimasi Volume Air</label>
+                    <div class="val tabular-nums" id="tandon-est-vol">~750 L</div>
+                    <div class="sub">Ditandai sebagai estimasi</div>
+                  </div>
+                  <div class="metric-box">
+                    <label>Kapasitas Maksimal</label>
+                    <div class="val tabular-nums" id="tandon-max-vol">1.000 L</div>
+                    <div class="sub">Tangki Atas (Roof Tank)</div>
+                  </div>
+                  <div class="metric-box">
+                    <label>Status Pengisian</label>
+                    <div class="val" id="tandon-fill-status">Normal</div>
+                    <div class="sub" id="tandon-fill-sub">Pompa inlet siaga</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Capacitive Nodes Detail Card -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Status Titik Sensor Kapasitif</h4>
+                  <p class="card-subtitle">Non-kontak eksternal pada dinding tandon</p>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px;" id="capacitive-detail-list">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Water Flow Monitoring -->
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon"><i data-lucide="arrow-down-to-line" style="width: 18px; height: 18px;"></i></div>
+                  <div>
+                    <h4 class="card-title">INLET (Air Masuk)</h4>
+                    <p class="card-subtitle">Sensor aliran pipa suplai PDAM / sumur</p>
+                  </div>
+                </div>
+                <span id="inlet-status-badge" class="status-badge status-info">Mengalir</span>
+              </div>
+              <div class="tank-metrics-grid">
+                <div class="metric-box">
+                  <label>Debit Air Masuk</label>
+                  <div class="val tabular-nums"><span id="inlet-flow-rate">12.4</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
+                </div>
+                <div class="metric-box">
+                  <label>Total Volume Masuk</label>
+                  <div class="val tabular-nums"><span id="inlet-total-vol">482.5</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon"><i data-lucide="arrow-up-from-line" style="width: 18px; height: 18px;"></i></div>
+                  <div>
+                    <h4 class="card-title">OUTLET (Air Keluar)</h4>
+                    <p class="card-subtitle">Sensor aliran distribusi ke instalasi rumah</p>
+                  </div>
+                </div>
+                <span id="outlet-status-badge" class="status-badge status-info">Mengalir</span>
+              </div>
+              <div class="tank-metrics-grid">
+                <div class="metric-box">
+                  <label>Debit Air Keluar</label>
+                  <div class="val tabular-nums"><span id="outlet-flow-rate">8.2</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
+                </div>
+                <div class="metric-box">
+                  <label>Total Volume Penggunaan</label>
+                  <div class="val tabular-nums"><span id="outlet-total-vol">365.0</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h4 class="card-title">Grafik Debit Air Masuk &amp; Keluar</h4>
+                <p class="card-subtitle">Perbandingan laju aliran inlet dan outlet (L/min)</p>
+              </div>
+            </div>
+            <div class="chart-container lg">
+              <canvas id="chart-tandon-flow"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             PAGE 3: KUALITAS AIR
+             ============================================================ -->
+        <section id="page-kualitas" class="page-view">
+          <div class="section-header">
+            <div>
+              <h3>Pemantauan Kualitas Air</h3>
+              <p>Empat parameter fisik-kimia utama dan sensor suhu air tandon.</p>
+            </div>
+          </div>
+
+          <div class="notice-banner warning">
+            <i data-lucide="alert-triangle"></i>
+            <div>
+              <strong>Batasan Pengukuran &amp; Hubungan EC–TDS:</strong> Nilai <strong>TDS (ppm)</strong> diturunkan secara matematis dari pengukuran konduktivitas listrik (<strong>EC</strong>) menggunakan faktor konversi (<span id="wq-factor-label">0.50</span>), sehingga keduanya bukan dua pengukuran independen. Hasil sensor ini memantau kondisi fisik-kimia air tandon dan <strong>tidak menyatakan air aman untuk diminum secara langsung</strong> tanpa uji mikrobiologis laboratorium.
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <!-- 1. Turbidity -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">
+                    Turbidity Sensor
+                    <span class="info-tooltip" tabindex="0">
+                      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                      <span class="tooltip-text">Nephelometric Turbidity Unit (NTU). Mengukur kekeruhan air akibat partikel tersuspensi seperti lumpur atau sedimen.</span>
+                    </span>
+                  </h4>
+                  <p class="card-subtitle">Kekeruhan partikel tersuspensi</p>
+                </div>
+                <span id="wq-turbidity-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="wq-turbidity-val">1.4</span><span class="kpi-unit">NTU</span></div>
+              <div class="chart-container sm" style="margin-top: 12px;">
+                <canvas id="chart-wq-turbidity"></canvas>
+              </div>
+            </div>
+
+            <!-- 2. TDS -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">
+                    TDS Sensor (Estimasi)
+                    <span class="info-tooltip" tabindex="0">
+                      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                      <span class="tooltip-text">Total Dissolved Solids (ppm / mg/L). Diestimasi dari nilai konduktivitas listrik (EC × faktor konversi).</span>
+                    </span>
+                  </h4>
+                  <p class="card-subtitle">Estimasi zat padat terlarut (dari EC)</p>
+                </div>
+                <span id="wq-tds-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="wq-tds-val">185</span><span class="kpi-unit">ppm (mg/L)</span></div>
+              <div class="chart-container sm" style="margin-top: 12px;">
+                <canvas id="chart-wq-tds"></canvas>
+              </div>
+            </div>
+
+            <!-- 3. pH -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">
+                    pH Sensor
+                    <span class="info-tooltip" tabindex="0">
+                      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                      <span class="tooltip-text">Mengukur tingkat keasaman (pH &lt; 7) atau kebasaan (pH &gt; 7) air. Rentang netral umum: 6.5 – 8.5.</span>
+                    </span>
+                  </h4>
+                  <p class="card-subtitle">Tingkat keasaman atau kebasaan</p>
+                </div>
+                <span id="wq-ph-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="wq-ph-val">7.2</span><span class="kpi-unit">pH</span></div>
+              <div class="chart-container sm" style="margin-top: 12px;">
+                <canvas id="chart-wq-ph"></canvas>
+              </div>
+            </div>
+
+            <!-- 4. EC -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">
+                    EC Sensor
+                    <span class="info-tooltip" tabindex="0">
+                      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                      <span class="tooltip-text">Electrical Conductivity (µS/cm). Mengukur kemampuan air menghantarkan arus listrik akibat ion terlarut; menjadi dasar estimasi TDS.</span>
+                    </span>
+                  </h4>
+                  <p class="card-subtitle">Konduktivitas listrik air</p>
+                </div>
+                <span id="wq-ec-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="wq-ec-val">370</span><span class="kpi-unit">µS/cm</span></div>
+              <div class="chart-container sm" style="margin-top: 12px;">
+                <canvas id="chart-wq-ec"></canvas>
+              </div>
+            </div>
+
+            <!-- 5. Temperature DS18B20 -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">
+                    Temperature (DS18B20)
+                    <span class="info-tooltip" tabindex="0">
+                      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                      <span class="tooltip-text">Sensor suhu digital tahan air DS18B20 (°C). Suhu air mempengaruhi kompensasi pembacaan EC/pH.</span>
+                    </span>
+                  </h4>
+                  <p class="card-subtitle">Suhu air tandon (parameter tambahan)</p>
+                </div>
+                <span id="wq-temp-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="wq-temp-val">27.4</span><span class="kpi-unit">°C</span></div>
+              <div class="chart-container sm" style="margin-top: 12px;">
+                <canvas id="chart-wq-temp"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             PAGE 4: MONITORING SANITASI (SEPTIC TANK)
+             ============================================================ -->
+        <section id="page-sanitasi" class="page-view">
+          <div class="section-header">
+            <div>
+              <h3>Monitoring Sanitasi &amp; Tangki Septik</h3>
+              <p>Pemantauan kapasitas isi tangki septik serta konsentrasi gas buang (H₂S, CH₄, NH₃).</p>
+            </div>
+          </div>
+
+          <div class="notice-banner warning">
+            <i data-lucide="shield-alert"></i>
+            <div>
+              <strong>Peringatan Ambang Batas Demonstrasi:</strong> Nilai ambang peringatan gas pada prototipe simulasi ini hanya digunakan untuk demonstrasi sistem dan <strong>bukan merupakan standar keselamatan kerja/lingkungan atau pengganti alat deteksi gas bersertifikat</strong>.
+            </div>
+          </div>
+
+          <div class="grid-2-1">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Visualisasi &amp; Kapasitas Tangki Septik</h4>
+                  <p class="card-subtitle">Kapasitas maksimal: <span id="septic-max-cap-label">2.000</span> L · Tinggi: <span id="septic-max-height-label">150</span> cm</p>
+                </div>
+                <span id="septic-status-badge" class="status-badge status-normal">Normal</span>
+              </div>
+
+              <div class="tank-layout">
+                <div style="text-align: center;">
+                  <div class="septic-cylinder">
+                    <div id="septic-fill-bar" class="septic-fill" style="height: 42%;"></div>
+                    <div class="tank-level-label">
+                      <strong class="tabular-nums" id="septic-visual-pct">42%</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tank-metrics-grid">
+                  <div class="metric-box">
+                    <label>Persentase Kepenuhan</label>
+                    <div class="val tabular-nums" id="septic-pct-val">42%</div>
+                    <div class="sub">Batas waspada: &ge; 75%</div>
+                  </div>
+                  <div class="metric-box">
+                    <label>Estimasi Volume Isi</label>
+                    <div class="val tabular-nums" id="septic-vol-val">~840 L</div>
+                    <div class="sub">Dari <span id="septic-vol-max">2.000</span> L</div>
+                  </div>
+                  <div class="metric-box">
+                    <label>Ketinggian Isi Tangki</label>
+                    <div class="val tabular-nums" id="septic-height-val">63 cm</div>
+                    <div class="sub">Dari <span id="septic-height-max">150</span> cm</div>
+                  </div>
+                  <div class="metric-box">
+                    <label>Rekomendasi Layanan</label>
+                    <div class="val" id="septic-action-text" style="font-size: 14px;">Belum perlu sedot</div>
+                    <div class="sub" id="septic-action-sub">Kapasitas aman</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Ringkasan Sensor Sanitasi</h4>
+                  <p class="card-subtitle">Status konektivitas modul sensor gas &amp; level</p>
+                </div>
+              </div>
+              <div id="septic-sensor-summary" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Gas Monitoring Cards -->
+          <div class="grid-3">
+            <!-- H2S -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">
+                    Gas H₂S (Hidrogen Sulfida)
+                    <span class="info-tooltip" tabindex="0">
+                      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                      <span class="tooltip-text">Gas berbau khas hasil penguraian anaerobik limbah organik (satuan ppm).</span>
+                    </span>
+                  </h4>
+                  <p class="card-subtitle" id="gas-h2s-sensor-state">Sensor: Aktif</p>
+                </div>
+                <span id="gas-h2s-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="gas-h2s-val">1.8</span><span class="kpi-unit">ppm</span></div>
+              <div class="chart-container sm" style="margin-top: 12px;">
+                <canvas id="chart-gas-h2s"></canvas>
+              </div>
+            </div>
+
+            <!-- CH4 -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">
+                    Gas CH₄ (Metana)
+                    <span class="info-tooltip" tabindex="0">
+                      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                      <span class="tooltip-text">Lower Explosive Limit (%LEL). Mengukur persentase konsentrasi gas metana terhadap batas bawah mudah terbakar.</span>
+                    </span>
+                  </h4>
+                  <p class="card-subtitle" id="gas-ch4-sensor-state">Sensor: Aktif</p>
+                </div>
+                <span id="gas-ch4-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="gas-ch4-val">3.2</span><span class="kpi-unit">%LEL</span></div>
+              <div class="chart-container sm" style="margin-top: 12px;">
+                <canvas id="chart-gas-ch4"></canvas>
+              </div>
+            </div>
+
+            <!-- NH3 -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">
+                    Gas NH₃ (Amonia)
+                    <span class="info-tooltip" tabindex="0">
+                      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                      <span class="tooltip-text">Gas amonia dari dekomposisi limbah nitrogen (satuan ppm).</span>
+                    </span>
+                  </h4>
+                  <p class="card-subtitle" id="gas-nh3-sensor-state">Sensor: Aktif</p>
+                </div>
+                <span id="gas-nh3-badge" class="status-badge status-normal">Normal</span>
+              </div>
+              <div class="kpi-value tabular-nums"><span id="gas-nh3-val">4.5</span><span class="kpi-unit">ppm</span></div>
+              <div class="chart-container sm" style="margin-top: 12px;">
+                <canvas id="chart-gas-nh3"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             PAGE 5: RIWAYAT DATA & ANALITIK
+             ============================================================ -->
+        <section id="page-riwayat" class="page-view">
+          <div class="section-header">
+            <div>
+              <h3>Riwayat Data &amp; Analitik</h3>
+              <p>Arsip pengukuran historis sesi dan simulasi rentang waktu untuk audit performa.</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div class="filter-group" id="history-filter-group">
+                <button class="btn btn-sm active" data-range="1h">1 Jam</button>
+                <button class="btn btn-sm" data-range="24h">24 Jam</button>
+                <button class="btn btn-sm" data-range="7d">7 Hari</button>
+                <button class="btn btn-sm" data-range="30d">30 Hari</button>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-export-csv">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Historical Charts Grid -->
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Historis Level Air Tandon (%)</h4>
+                  <p class="card-subtitle" id="hist-range-label-1">Rentang: 1 Jam Terakhir</p>
+                </div>
+              </div>
+              <div class="chart-container sm"><canvas id="chart-hist-level"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Historis Debit Air Masuk &amp; Keluar (L/min)</h4>
+                  <p class="card-subtitle">Inlet vs Outlet</p>
+                </div>
+              </div>
+              <div class="chart-container sm"><canvas id="chart-hist-flow"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Historis Turbidity (NTU)</h4>
+                  <p class="card-subtitle">Kekeruhan air</p>
+                </div>
+              </div>
+              <div class="chart-container sm"><canvas id="chart-hist-turbidity"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Historis TDS (ppm)</h4>
+                  <p class="card-subtitle">Estimasi zat padat terlarut</p>
+                </div>
+              </div>
+              <div class="chart-container sm"><canvas id="chart-hist-tds"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Historis pH</h4>
+                  <p class="card-subtitle">Tingkat keasaman/kebasaan</p>
+                </div>
+              </div>
+              <div class="chart-container sm"><canvas id="chart-hist-ph"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Historis EC (µS/cm)</h4>
+                  <p class="card-subtitle">Konduktivitas listrik air</p>
+                </div>
+              </div>
+              <div class="chart-container sm"><canvas id="chart-hist-ec"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Historis Suhu Air (°C)</h4>
+                  <p class="card-subtitle">Sensor DS18B20</p>
+                </div>
+              </div>
+              <div class="chart-container sm"><canvas id="chart-hist-temp"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Historis Gas Tangki Septik</h4>
+                  <p class="card-subtitle">H₂S (ppm), CH₄ (%LEL), NH₃ (ppm)</p>
+                </div>
+              </div>
+              <div class="chart-container sm"><canvas id="chart-hist-gas"></canvas></div>
+            </div>
+          </div>
+
+          <!-- History Table -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h4 class="card-title">Tabel Riwayat Pengukuran</h4>
+                <p class="card-subtitle" id="history-table-meta">Menampilkan data terbaru sesuai filter waktu</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Waktu</th>
+                    <th>Level (%)</th>
+                    <th>Inlet (L/m)</th>
+                    <th>Outlet (L/m)</th>
+                    <th>Turbidity (NTU)</th>
+                    <th>TDS (ppm)</th>
+                    <th>pH</th>
+                    <th>EC (µS/cm)</th>
+                    <th>Suhu (°C)</th>
+                    <th>Septik (%)</th>
+                    <th>H₂S (ppm)</th>
+                    <th>CH₄ (%LEL)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="history-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             PAGE 6: PENGATURAN
+             ============================================================ -->
+        <section id="page-pengaturan" class="page-view">
+          <div class="section-header">
+            <div>
+              <h3>Pengaturan Sistem &amp; Kalibrasi Simulasi</h3>
+              <p>Konfigurasi kapasitas tandon, ambang batas peringatan, dan simulasi gangguan sensor.</p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Parameter Fisik &amp; Konversi</h4>
+                  <p class="card-subtitle">Spesifikasi tangki dan faktor perhitungan estimasi</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="cfg-tank-cap">Kapasitas Tandon Maksimal (L)</label>
+                  <input type="number" id="cfg-tank-cap" min="250" max="5000" step="50" value="1000" />
+                  <div class="hint">Digunakan untuk menghitung estimasi volume tandon.</div>
+                </div>
+                <div class="form-field">
+                  <label for="cfg-septic-cap">Kapasitas Tangki Septik (L)</label>
+                  <input type="number" id="cfg-septic-cap" min="500" max="10000" step="100" value="2000" />
+                </div>
+                <div class="form-field">
+                  <label for="cfg-septic-height">Tinggi Tangki Septik (cm)</label>
+                  <input type="number" id="cfg-septic-height" min="80" max="300" step="5" value="150" />
+                </div>
+                <div class="form-field">
+                  <label for="cfg-tds-factor">Faktor Konversi EC → TDS</label>
+                  <input type="number" id="cfg-tds-factor" min="0.45" max="0.75" step="0.01" value="0.50" />
+                  <div class="hint">Umumnya 0.50 (NaCl) hingga 0.64 untuk air tawar.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h4 class="card-title">Ambang Batas Peringatan (Threshold)</h4>
+                  <p class="card-subtitle">Menentukan status Normal, Warning, dan Danger</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="cfg-turb-warn">Turbidity Warning (NTU)</label>
+                  <input type="number" id="cfg-turb-warn" min="1" max="20" step="0.5" value="5.0" />
+                </div>
+                <div class="form-field">
+                  <label for="cfg-tds-warn">TDS Warning (ppm)</label>
+                  <input type="number" id="cfg-tds-warn" min="100" max="1000" step="10" value="500" />
+                </div>
+                <div class="form-field">
+                  <label for="cfg-ph-min">pH Minimum Normal</label>
+                  <input type="number" id="cfg-ph-min" min="4.0" max="7.0" step="0.1" value="6.5" />
+                </div>
+                <div class="form-field">
+                  <label for="cfg-ph-max">pH Maksimum Normal</label>
+                  <input type="number" id="cfg-ph-max" min="7.0" max="10.0" step="0.1" value="8.5" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h4 class="card-title">Kontrol Perangkat &amp; Uji Gangguan Sensor</h4>
+                <p class="card-subtitle">Simulasikan status Offline atau Sensor Error untuk demonstrasi alarm</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="cfg-sim-interval">Interval Pembaruan Simulasi</label>
+                <select id="cfg-sim-interval">
+                  <option value="2000">2.0 detik</option>
+                  <option value="2500" selected>2.5 detik (Standar)</option>
+                  <option value="3000">3.0 detik</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="cfg-device-online">Status Koneksi Perangkat</label>
+                <select id="cfg-device-online">
+                  <option value="online" selected>Online (Terhubung)</option>
+                  <option value="offline">Offline (Terputus)</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="cfg-sensor-error">Simulasi Sensor Error</label>
+                <select id="cfg-sensor-error">
+                  <option value="none" selected>Tidak Ada (Semua Sensor Normal)</option>
+                  <option value="turbidity">Turbidity Sensor Error</option>
+                  <option value="ph">pH Sensor Error</option>
+                  <option value="ec">EC / TDS Sensor Error</option>
+                  <option value="h2s">Gas H₂S Sensor Error</option>
+                </select>
+                <div class="hint">Menguji tampilan status Sensor Error dan notifikasi kegagalan respons.</div>
+              </div>
+              <div class="form-field" style="display: flex; align-items: flex-end; gap: 10px;">
+                <button class="btn btn-primary" id="btn-save-settings">Terapkan Pengaturan</button>
+                <button class="btn" id="btn-reset-settings">Reset Default</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Backdrop for Drawers & Mobile Sidebar -->
+  <div id="drawer-backdrop" class="drawer-backdrop"></div>
+
+  <!-- ========================================================================
+       SIMULATION CONTROL DRAWER
+       ======================================================================== -->
+  <aside id="sim-drawer" class="side-drawer" aria-label="Simulation Control">
+    <div class="drawer-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="sliders-horizontal" style="width: 18px; height: 18px; color: var(--primary);"></i>
+        <h3>Simulation Control</h3>
+      </div>
+      <button id="btn-close-sim" class="btn btn-sm" aria-label="Tutup">
+        <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <div class="control-group">
+        <div class="control-group-title">Kontrol Mesin Simulasi</div>
+        <div class="btn-row">
+          <button id="sim-start-btn" class="btn btn-sm btn-primary">Start</button>
+          <button id="sim-pause-btn" class="btn btn-sm">Pause</button>
+          <button id="sim-reset-btn" class="btn btn-sm">Reset</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-title">Skenario Kondisi Cepat</div>
+        <div class="btn-row">
+          <button id="preset-normal-btn" class="btn btn-sm active">Normal</button>
+          <button id="preset-warning-btn" class="btn btn-sm">Warning</button>
+          <button id="preset-danger-btn" class="btn btn-sm">Danger</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-title">Parameter Tandon &amp; Kualitas Air</div>
+
+        <div class="slider-item">
+          <div class="slider-label">
+            <span>Ketinggian Air</span>
+            <span class="tabular-nums" id="val-slider-level">75%</span>
+          </div>
+          <input type="range" id="slider-level" min="0" max="100" step="1" value="75" />
+        </div>
+
+        <div class="slider-item">
+          <div class="slider-label">
+            <span>Turbidity</span>
+            <span class="tabular-nums" id="val-slider-turbidity">1.4 NTU</span>
+          </div>
+          <input type="range" id="slider-turbidity" min="0" max="25" step="0.1" value="1.4" />
+        </div>
+
+        <div class="slider-item">
+          <div class="slider-label">
+            <span>EC (Konduktivitas)</span>
+            <span class="tabular-nums" id="val-slider-ec">370 µS/cm</span>
+          </div>
+          <input type="range" id="slider-ec" min="50" max="2400" step="10" value="370" />
+        </div>
+
+        <div class="slider-item">
+          <div class="slider-label">
+            <span>TDS (Tersinkron EC)</span>
+            <span class="tabular-nums" id="val-slider-tds">185 ppm</span>
+          </div>
+          <input type="range" id="slider-tds" min="25" max="1200" step="5" value="185" />
+        </div>
+
+        <div class="slider-item">
+          <div class="slider-label">
+            <span>pH Air</span>
+            <span class="tabular-nums" id="val-slider-ph">7.2</span>
+          </div>
+          <input type="range" id="slider-ph" min="4.0" max="10.0" step="0.1" value="7.2" />
+        </div>
+
+        <div class="slider-item">
+          <div class="slider-label">
+            <span>Suhu Air (DS18B20)</span>
+            <span class="tabular-nums" id="val-slider-temp">27.4 °C</span>
+          </div>
+          <input type="range" id="slider-temp" min="18" max="42" step="0.1" value="27.4" />
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-title">Parameter Tangki Septik &amp; Gas</div>
+
+        <div class="slider-item">
+          <div class="slider-label">
+            <span>Kepenuhan Tangki Septik</span>
+            <span class="tabular-nums" id="val-slider-septic">42%</span>
+          </div>
+          <input type="range" id="slider-septic" min="0" max="100" step="1" value="42" />
+        </div>
+
+        <div class="slider-item">
+          <div class="slider-label">
+            <span>Konsentrasi Gas (H₂S / CH₄ / NH₃)</span>
+            <span class="tabular-nums" id="val-slider-gas">1.8 ppm</span>
+          </div>
+          <input type="range" id="slider-gas" min="0" max="30" step="0.2" value="1.8" />
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================
+       NOTIFICATION CENTER DRAWER
+       ======================================================================== -->
+  <aside id="notif-drawer" class="side-drawer" aria-label="Pusat Notifikasi">
+    <div class="drawer-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="bell" style="width: 18px; height: 18px; color: var(--primary);"></i>
+        <h3>Notifikasi Sistem</h3>
+      </div>
+      <button id="btn-close-notif" class="btn btn-sm" aria-label="Tutup">
+        <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+        <div class="filter-group" id="notif-filter-group">
+          <button class="btn btn-sm active" data-cat="all">Semua</button>
+          <button class="btn btn-sm" data-cat="danger">Bahaya</button>
+          <button class="btn btn-sm" data-cat="warning">Peringatan</button>
+          <button class="btn btn-sm" data-cat="info">Info</button>
+        </div>
+        <button id="btn-mark-all-read" class="btn btn-sm">Tandai dibaca</button>
+      </div>
+      <div id="drawer-notif-list" class="notif-list"></div>
+    </div>
+  </aside>
+
+  <script src="main.js"></script>
+</body>
+</html>
+
