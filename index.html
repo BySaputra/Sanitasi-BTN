@@ -763,30 +763,64 @@ body {
 }
 
 /* ==========================================================================
-   Tank & Capacitive Sensor Visualization (Page 2)
+   Tank & Ultrasonic Sensor Visualization (Page 2)
    ========================================================================== */
 
 .tank-layout {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 24px;
   align-items: center;
 }
 
 .tank-visual-wrap {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 12px 0;
+  padding: 6px 0;
+}
+
+.tank-ultrasonic-mount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: -2px;
+  z-index: 3;
+}
+
+.ultrasonic-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px 8px 3px 3px;
+  background: var(--primary-deep);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ultrasonic-transducer {
+  width: 28px;
+  height: 6px;
+  background: #4F6B7E;
+  border-radius: 0 0 4px 4px;
+}
+
+.tank-visual-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
 }
 
 .tank-cylinder {
   position: relative;
-  width: 148px;
-  height: 270px;
+  width: 156px;
+  height: 260px;
   border: 2px solid var(--border-strong);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--bg-main);
   overflow: hidden;
   display: flex;
@@ -794,11 +828,42 @@ body {
   justify-content: flex-end;
 }
 
+.ultrasonic-beam-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+  transition: height 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ultrasonic-beam-line {
+  width: 0;
+  flex: 1;
+  border-left: 1.5px dashed rgba(35, 120, 168, 0.5);
+}
+
+.ultrasonic-dist-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--primary-deep);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #CFE3EE;
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin: 4px 0;
+}
+
 .tank-water {
   width: 100%;
   background: var(--primary);
-  opacity: 0.86;
-  transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease;
+  opacity: 0.88;
+  transition: height 0.55s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease;
   position: relative;
 }
 
@@ -808,14 +873,14 @@ body {
   left: 0;
   right: 0;
   height: 4px;
-  background: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.42);
 }
 
 .tank-level-line {
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 1px dashed rgba(38, 55, 70, 0.25);
+  border-top: 1px dashed rgba(38, 55, 70, 0.16);
   pointer-events: none;
 }
 
@@ -827,48 +892,27 @@ body {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
 .tank-level-label strong {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   padding: 3px 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
 }
 
-.tank-sensors-rail {
+.tank-scale-rail {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   justify-content: space-between;
-  height: 246px;
-}
-
-.sensor-node-pill {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 9px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-main);
-  font-size: 11.5px;
-  color: var(--text-secondary);
-}
-
-.sensor-node-pill.active {
-  background: var(--success-bg);
-  border-color: var(--success-border);
-  color: var(--success);
-  font-weight: 600;
-}
-
-.sensor-node-pill.inactive {
-  background: var(--bg-main);
+  padding: 4px 0;
+  font-size: 11px;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .tank-metrics-grid {
@@ -1247,6 +1291,7 @@ input[type="range"] {
   }
 }
 
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lucide@0.446.0/dist/umd/lucide.min.js"></script>
@@ -1378,7 +1423,7 @@ input[type="range"] {
                   <div class="card-icon"><i data-lucide="waves" style="width: 18px; height: 18px;"></i></div>
                   <div>
                     <h4 class="card-title">Ketinggian Air</h4>
-                    <p class="card-subtitle">Sensor Kapasitif 4-Titik</p>
+                    <p class="card-subtitle">Sensor Ultrasonik</p>
                   </div>
                 </div>
                 <span id="kpi-water-badge" class="status-badge status-normal">Normal</span>
@@ -1504,102 +1549,129 @@ input[type="range"] {
           <div class="section-header">
             <div>
               <h3>Monitoring Tandon Air</h3>
-              <p>Deteksi level air dengan sensor kapasitif eksternal 4-titik dan pemantauan debit inlet/outlet.</p>
+              <p>Kondisi volume tandon, pengukuran sensor ultrasonik, dan debit aliran air secara real-time.</p>
+            </div>
+            <div class="pill-badge tabular-nums" title="Waktu pembaruan data terakhir">
+              <i data-lucide="clock" style="width: 13px; height: 13px;"></i>
+              <span>Pembaruan: <strong id="tandon-last-update">--:--:--</strong></span>
             </div>
           </div>
 
-          <div class="notice-banner info">
-            <i data-lucide="info"></i>
-            <div>
-              <strong>Metode Pengukuran Diskrit:</strong> Sensor kapasitif dipasang pada 4 titik ketinggian dinding luar tandon (25%, 50%, 75%, 100%). Pembacaan sistem merepresentasikan rentang ketinggian berdasarkan titik sensor aktif, dan volume air ditampilkan sebagai <strong>nilai estimasi</strong>.
-            </div>
-          </div>
-
+          <!-- A. Ringkasan Kondisi Tandon & B. Pengukuran Sensor Ultrasonik -->
           <div class="grid-2-1">
-            <!-- Water Level Card -->
             <div class="card">
               <div class="card-header">
                 <div>
-                  <h4 class="card-title">Visualisasi &amp; Status Level Tandon</h4>
-                  <p class="card-subtitle">Kapasitas maksimal terkonfigurasi: <span id="tandon-max-cap-label">1.000</span> L</p>
+                  <h4 class="card-title">Ringkasan Kondisi Tandon</h4>
+                  <p class="card-subtitle">Kapasitas maksimum <span id="tandon-max-cap-label">1.000</span> L</p>
                 </div>
                 <span id="tandon-status-badge" class="status-badge status-normal">Normal</span>
               </div>
 
               <div class="tank-layout">
                 <div class="tank-visual-wrap">
-                  <div class="tank-cylinder" aria-label="Visualisasi Tangki Air">
-                    <div class="tank-level-line" style="bottom: 25%;"></div>
-                    <div class="tank-level-line" style="bottom: 50%;"></div>
-                    <div class="tank-level-line" style="bottom: 75%;"></div>
-                    <div id="tandon-water-fill" class="tank-water" style="height: 75%;">
-                      <div class="tank-water-surface"></div>
+                  <div class="tank-ultrasonic-mount" title="Sensor Ultrasonik Waterproof">
+                    <div class="ultrasonic-head">
+                      <i data-lucide="radio" style="width: 12px; height: 12px;"></i>
+                      <span>Ultrasonik</span>
                     </div>
-                    <div class="tank-level-label">
-                      <strong class="tabular-nums" id="tandon-visual-pct">75%</strong>
-                    </div>
+                    <div class="ultrasonic-transducer"></div>
                   </div>
-
-                  <div class="tank-sensors-rail" aria-label="Titik Sensor Kapasitif">
-                    <div class="sensor-node-pill active" id="cap-node-25">
-                      <span class="dot dot-success"></span>
-                      <span>25%</span>
+                  <div class="tank-visual-row">
+                    <div class="tank-cylinder" aria-label="Visualisasi Tangki Air">
+                      <div class="tank-level-line" style="bottom: 25%;"></div>
+                      <div class="tank-level-line" style="bottom: 50%;"></div>
+                      <div class="tank-level-line" style="bottom: 75%;"></div>
+                      <div id="tandon-beam-zone" class="ultrasonic-beam-zone" style="height: 22%;">
+                        <div class="ultrasonic-beam-line"></div>
+                        <span class="ultrasonic-dist-tag tabular-nums" id="tandon-visual-dist">26 cm</span>
+                        <div class="ultrasonic-beam-line"></div>
+                      </div>
+                      <div id="tandon-water-fill" class="tank-water" style="height: 78%;">
+                        <div class="tank-water-surface"></div>
+                      </div>
+                      <div class="tank-level-label">
+                        <strong class="tabular-nums" id="tandon-visual-pct">78%</strong>
+                      </div>
                     </div>
-                    <div class="sensor-node-pill active" id="cap-node-50">
-                      <span class="dot dot-success"></span>
-                      <span>50%</span>
-                    </div>
-                    <div class="sensor-node-pill active" id="cap-node-75">
-                      <span class="dot dot-success"></span>
-                      <span>75%</span>
-                    </div>
-                    <div class="sensor-node-pill inactive" id="cap-node-100">
-                      <span class="dot dot-neutral"></span>
+                    <div class="tank-scale-rail" aria-hidden="true">
                       <span>100%</span>
+                      <span>75%</span>
+                      <span>50%</span>
+                      <span>25%</span>
+                      <span>0%</span>
                     </div>
                   </div>
                 </div>
 
                 <div class="tank-metrics-grid">
                   <div class="metric-box">
-                    <label>Level Terdeteksi (Diskrit)</label>
-                    <div class="val tabular-nums" id="tandon-detected-pct">75%</div>
-                    <div class="sub" id="tandon-sensor-range">Rentang: 75% – 99%</div>
+                    <label>Persentase Ketinggian Air</label>
+                    <div class="val tabular-nums" id="tandon-detected-pct">78%</div>
+                    <div class="sub" id="tandon-level-note">Kondisi air mencukupi</div>
                   </div>
                   <div class="metric-box">
                     <label>Estimasi Volume Air</label>
-                    <div class="val tabular-nums" id="tandon-est-vol">~750 L</div>
-                    <div class="sub">Ditandai sebagai estimasi</div>
+                    <div class="val tabular-nums" id="tandon-est-vol">780 L</div>
+                    <div class="sub">Dari <span id="tandon-max-vol">1.000 L</span></div>
                   </div>
                   <div class="metric-box">
-                    <label>Kapasitas Maksimal</label>
-                    <div class="val tabular-nums" id="tandon-max-vol">1.000 L</div>
-                    <div class="sub">Tangki Atas (Roof Tank)</div>
+                    <label>Kapasitas Maksimum</label>
+                    <div class="val tabular-nums" id="tandon-max-vol-box">1.000 L</div>
+                    <div class="sub">Tinggi acuan <span id="tandon-ref-height-label">120</span> cm</div>
                   </div>
                   <div class="metric-box">
                     <label>Status Pengisian</label>
-                    <div class="val" id="tandon-fill-status">Normal</div>
-                    <div class="sub" id="tandon-fill-sub">Pompa inlet siaga</div>
+                    <div class="val" id="tandon-fill-status">Mengisi</div>
+                    <div class="sub" id="tandon-fill-sub">Debit masuk 11.8 L/min</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Capacitive Nodes Detail Card -->
+            <!-- B. Pengukuran Sensor Ultrasonik -->
             <div class="card">
               <div class="card-header">
                 <div>
-                  <h4 class="card-title">Status Titik Sensor Kapasitif</h4>
-                  <p class="card-subtitle">Non-kontak eksternal pada dinding tandon</p>
+                  <h4 class="card-title">Sensor Ultrasonik</h4>
+                  <p class="card-subtitle">Waterproof · Terpasang di atas tandon</p>
                 </div>
+                <span id="us-sensor-badge" class="status-badge status-normal">Aktif</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 10px;" id="capacitive-detail-list">
-                <!-- Populated by JS -->
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="metric-box" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <label style="margin-bottom: 2px;">Jarak ke Permukaan Air</label>
+                    <div class="sub">Blind zone &lt; <span id="us-blind-zone-label">10</span> cm</div>
+                  </div>
+                  <div class="val tabular-nums" id="us-distance-val">26.4 cm</div>
+                </div>
+                <div class="metric-box" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <label style="margin-bottom: 2px;">Ketinggian Air Terhitung</label>
+                    <div class="sub">Acuan <span id="us-ref-height-label">120</span> cm</div>
+                  </div>
+                  <div class="val tabular-nums" id="us-height-val">93.6 cm</div>
+                </div>
+                <div class="metric-box" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <label style="margin-bottom: 2px;">Persentase Level Air</label>
+                    <div class="sub">Pengukuran kontinu</div>
+                  </div>
+                  <div class="val tabular-nums" id="us-pct-val">78.0%</div>
+                </div>
+                <div class="metric-box" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <label style="margin-bottom: 2px;">Status Sensor</label>
+                    <div class="sub" id="us-sensor-sub">Pembacaan valid</div>
+                  </div>
+                  <span id="us-sensor-state-badge" class="status-badge status-normal">Aktif</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Water Flow Monitoring -->
+          <!-- C. Monitoring Aliran Air -->
           <div class="grid-2">
             <div class="card">
               <div class="card-header">
@@ -1607,7 +1679,7 @@ input[type="range"] {
                   <div class="card-icon"><i data-lucide="arrow-down-to-line" style="width: 18px; height: 18px;"></i></div>
                   <div>
                     <h4 class="card-title">INLET (Air Masuk)</h4>
-                    <p class="card-subtitle">Sensor aliran pipa suplai PDAM / sumur</p>
+                    <p class="card-subtitle">Aliran suplai menuju tandon</p>
                   </div>
                 </div>
                 <span id="inlet-status-badge" class="status-badge status-info">Mengalir</span>
@@ -1615,7 +1687,7 @@ input[type="range"] {
               <div class="tank-metrics-grid">
                 <div class="metric-box">
                   <label>Debit Air Masuk</label>
-                  <div class="val tabular-nums"><span id="inlet-flow-rate">12.4</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
+                  <div class="val tabular-nums"><span id="inlet-flow-rate">11.8</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
                 </div>
                 <div class="metric-box">
                   <label>Total Volume Masuk</label>
@@ -1630,7 +1702,7 @@ input[type="range"] {
                   <div class="card-icon"><i data-lucide="arrow-up-from-line" style="width: 18px; height: 18px;"></i></div>
                   <div>
                     <h4 class="card-title">OUTLET (Air Keluar)</h4>
-                    <p class="card-subtitle">Sensor aliran distribusi ke instalasi rumah</p>
+                    <p class="card-subtitle">Distribusi penggunaan rumah tangga</p>
                   </div>
                 </div>
                 <span id="outlet-status-badge" class="status-badge status-info">Mengalir</span>
@@ -1638,7 +1710,7 @@ input[type="range"] {
               <div class="tank-metrics-grid">
                 <div class="metric-box">
                   <label>Debit Air Keluar</label>
-                  <div class="val tabular-nums"><span id="outlet-flow-rate">8.2</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
+                  <div class="val tabular-nums"><span id="outlet-flow-rate">7.4</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
                 </div>
                 <div class="metric-box">
                   <label>Total Volume Penggunaan</label>
@@ -1648,15 +1720,33 @@ input[type="range"] {
             </div>
           </div>
 
+          <!-- D. Grafik Monitoring Tandon -->
           <div class="card">
-            <div class="card-header">
+            <div class="card-header" style="flex-wrap: wrap;">
               <div>
-                <h4 class="card-title">Grafik Debit Air Masuk &amp; Keluar</h4>
-                <p class="card-subtitle">Perbandingan laju aliran inlet dan outlet (L/min)</p>
+                <h4 class="card-title">Grafik Monitoring Tandon</h4>
+                <p class="card-subtitle" id="tandon-chart-range-label">Rentang: 1 Jam Terakhir</p>
+              </div>
+              <div class="filter-group" id="tandon-range-group">
+                <button class="btn btn-sm active" data-range="1h">1 Jam</button>
+                <button class="btn btn-sm" data-range="24h">24 Jam</button>
+                <button class="btn btn-sm" data-range="7d">7 Hari</button>
+                <button class="btn btn-sm" data-range="30d">30 Hari</button>
               </div>
             </div>
-            <div class="chart-container lg">
-              <canvas id="chart-tandon-flow"></canvas>
+            <div class="grid-2" style="margin-bottom: 0;">
+              <div>
+                <div style="font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Perubahan Ketinggian Air (%)</div>
+                <div class="chart-container">
+                  <canvas id="chart-tandon-level"></canvas>
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Debit Air Masuk &amp; Keluar (L/min)</div>
+                <div class="chart-container">
+                  <canvas id="chart-tandon-flow"></canvas>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -2097,6 +2187,19 @@ input[type="range"] {
                   <div class="hint">Digunakan untuk menghitung estimasi volume tandon.</div>
                 </div>
                 <div class="form-field">
+                  <label for="cfg-tank-ref-height">Tinggi Acuan Tandon (cm)</label>
+                  <input type="number" id="cfg-tank-ref-height" min="60" max="400" step="5" value="120" />
+                  <div class="hint">Jarak sensor ultrasonik ke dasar tandon.</div>
+                </div>
+                <div class="form-field">
+                  <label for="cfg-tank-low-warn">Batas Peringatan Level Rendah (%)</label>
+                  <input type="number" id="cfg-tank-low-warn" min="5" max="45" step="5" value="25" />
+                </div>
+                <div class="form-field">
+                  <label for="cfg-tank-high-warn">Batas Peringatan Level Penuh (%)</label>
+                  <input type="number" id="cfg-tank-high-warn" min="70" max="98" step="1" value="85" />
+                </div>
+                <div class="form-field">
                   <label for="cfg-septic-cap">Kapasitas Tangki Septik (L)</label>
                   <input type="number" id="cfg-septic-cap" min="500" max="10000" step="100" value="2000" />
                 </div>
@@ -2167,6 +2270,7 @@ input[type="range"] {
                 <label for="cfg-sensor-error">Simulasi Sensor Error</label>
                 <select id="cfg-sensor-error">
                   <option value="none" selected>Tidak Ada (Semua Sensor Normal)</option>
+                  <option value="ultrasonic">Sensor Ultrasonik Tandon Error</option>
                   <option value="turbidity">Turbidity Sensor Error</option>
                   <option value="ph">pH Sensor Error</option>
                   <option value="ec">EC / TDS Sensor Error</option>
@@ -2343,6 +2447,10 @@ input[type="range"] {
   // ------------------------------------------------------------------------
   const DEFAULT_CONFIG = {
     tankCapacityL: 1000,
+    tankRefHeightCm: 120,
+    ultrasonicBlindZoneCm: 10,
+    tankLowWarnPct: 25,
+    tankHighWarnPct: 85,
     septicCapacityL: 2000,
     septicHeightCm: 150,
     ecToTdsFactor: 0.50,
@@ -2370,13 +2478,15 @@ input[type="range"] {
     simulationRunning: true,
     activePreset: 'normal',
     activePage: 'dashboard',
+    tandonRange: '1h',
     historyRange: '1h',
     notifFilter: 'all',
 
     // Current live telemetry
     current: {
       timestamp: new Date(),
-      waterLevelRaw: 78, // internal physical water height (%) for discrete 4-point capacitive sensor
+      waterLevelRaw: 78, // target/simulated water level (%)
+      ultrasonicDistanceCm: 26.4, // measured distance from top sensor to water surface
       inletFlow: 11.8,   // L/min
       outletFlow: 7.4,   // L/min
       inletTotalL: 482.5,
@@ -2427,9 +2537,15 @@ input[type="range"] {
      */
     ingestTelemetry(payload) {
       const prev = this.current;
+      const nextRawPct = payload.waterLevelRaw ?? prev.waterLevelRaw;
+      const nextDistCm = payload.ultrasonicDistanceCm !== undefined
+        ? payload.ultrasonicDistanceCm
+        : +(this.config.tankRefHeightCm * (1 - nextRawPct / 100)).toFixed(1);
+
       this.current = {
         ...prev,
         ...payload,
+        ultrasonicDistanceCm: nextDistCm,
         tds: Math.round((payload.ec ?? prev.ec) * this.config.ecToTdsFactor),
         timestamp: payload.timestamp ? new Date(payload.timestamp) : new Date()
       };
@@ -2437,9 +2553,10 @@ input[type="range"] {
     },
 
     pushSnapshot(snapshot) {
+      const metrics = computeUltrasonicTankMetrics(snapshot.ultrasonicDistanceCm);
       const point = {
         ...snapshot,
-        detectedLevelPct: getDiscreteCapacitiveLevel(snapshot.waterLevelRaw)
+        detectedLevelPct: metrics.valid ? Math.round(metrics.levelPct * 10) / 10 : Math.round(snapshot.waterLevelRaw)
       };
       this.liveSeries.push(point);
       if (this.liveSeries.length > 30) {
@@ -2452,22 +2569,52 @@ input[type="range"] {
     }
   };
 
-  // Discrete 4-point capacitive sensor helper (25%, 50%, 75%, 100%)
-  function getDiscreteCapacitiveLevel(rawPct) {
-    if (rawPct >= 100) return 100;
-    if (rawPct >= 75) return 75;
-    if (rawPct >= 50) return 50;
-    if (rawPct >= 25) return 25;
-    return 0;
-  }
+  /**
+   * Continuous ultrasonic water level calculation with blind-zone & range validation:
+   * Tinggi air = Tinggi acuan tandon - Jarak sensor ke permukaan air
+   * Level (%)  = (Tinggi air / Tinggi acuan tandon) * 100%
+   * Volume (L) = (Level (%) / 100) * Kapasitas maksimum tandon
+   */
+  function computeUltrasonicTankMetrics(distanceCm) {
+    const cfg = SensorStore.config;
+    const refCm = cfg.tankRefHeightCm;
+    const blindCm = cfg.ultrasonicBlindZoneCm;
 
-  function getCapacitiveNodesState(rawPct) {
-    return [
-      { threshold: 25, active: rawPct >= 25 },
-      { threshold: 50, active: rawPct >= 50 },
-      { threshold: 75, active: rawPct >= 75 },
-      { threshold: 100, active: rawPct >= 100 }
-    ];
+    if (!cfg.deviceOnline) {
+      return {
+        valid: false,
+        reason: 'offline',
+        distanceCm: null,
+        heightCm: 0,
+        levelPct: 0,
+        volumeL: 0
+      };
+    }
+
+    const outOfRange = !Number.isFinite(distanceCm) || distanceCm < blindCm || distanceCm > refCm;
+    if (cfg.simulatedErrorSensor === 'ultrasonic' || outOfRange) {
+      return {
+        valid: false,
+        reason: distanceCm < blindCm ? 'blind_zone' : 'sensor_error',
+        distanceCm: Number.isFinite(distanceCm) ? distanceCm : null,
+        heightCm: 0,
+        levelPct: 0,
+        volumeL: 0
+      };
+    }
+
+    const heightCm = Math.max(0, Math.min(refCm, refCm - distanceCm));
+    const levelPct = Math.max(0, Math.min(100, (heightCm / refCm) * 100));
+    const volumeL = Math.max(0, Math.min(cfg.tankCapacityL, (levelPct / 100) * cfg.tankCapacityL));
+
+    return {
+      valid: true,
+      reason: 'ok',
+      distanceCm,
+      heightCm,
+      levelPct,
+      volumeL
+    };
   }
 
   // ------------------------------------------------------------------------
@@ -2479,10 +2626,21 @@ input[type="range"] {
       const cfg = SensorStore.config;
       const errSensor = cfg.simulatedErrorSensor;
 
-      const waterDiscrete = getDiscreteCapacitiveLevel(c.waterLevelRaw);
+      const tankMetrics = computeUltrasonicTankMetrics(c.ultrasonicDistanceCm);
       let waterStatus = { code: 'normal', label: 'Normal' };
-      if (waterDiscrete <= 25) waterStatus = { code: 'danger', label: 'Rendah' };
-      else if (waterDiscrete === 100) waterStatus = { code: 'info', label: 'Penuh' };
+      let ultrasonicStatus = { code: 'normal', label: 'Aktif' };
+
+      if (!cfg.deviceOnline) {
+        waterStatus = { code: 'danger', label: 'Offline' };
+        ultrasonicStatus = { code: 'danger', label: 'Tidak Terhubung' };
+      } else if (!tankMetrics.valid) {
+        waterStatus = { code: 'error', label: 'Sensor Error' };
+        ultrasonicStatus = { code: 'error', label: 'Error' };
+      } else if (tankMetrics.levelPct <= cfg.tankLowWarnPct) {
+        waterStatus = { code: 'danger', label: 'Rendah' };
+      } else if (tankMetrics.levelPct >= cfg.tankHighWarnPct) {
+        waterStatus = { code: 'info', label: 'Penuh' };
+      }
 
       const turbStatus = errSensor === 'turbidity'
         ? { code: 'error', label: 'Sensor Error' }
@@ -2552,8 +2710,9 @@ input[type="range"] {
       const activeSensors = errSensor === 'none' ? 10 : 9;
 
       return {
-        waterDiscrete,
+        tankMetrics,
         waterStatus,
+        ultrasonicStatus,
         turbStatus,
         tdsStatus,
         phStatus,
@@ -2587,13 +2746,31 @@ input[type="range"] {
         );
       }
 
-      if (evalResult.waterDiscrete <= 25) {
+      if (!evalResult.tankMetrics.valid && cfg.simulatedErrorSensor !== 'ultrasonic') {
         this.emitNotification(
-          'water_low',
+          'ultrasonic_range',
           'warning',
-          'Level Air Tandon Rendah',
-          `Sensor kapasitif mendeteksi ketinggian air <= ${evalResult.waterDiscrete}% (estimasi ~${Math.round((evalResult.waterDiscrete / 100) * cfg.tankCapacityL)} L).`
+          'Pembacaan Sensor Ultrasonik Tidak Valid',
+          evalResult.tankMetrics.reason === 'blind_zone'
+            ? `Jarak permukaan air (${evalResult.tankMetrics.distanceCm?.toFixed(1)} cm) berada di dalam blind zone (< ${cfg.ultrasonicBlindZoneCm} cm).`
+            : 'Jarak pembacaan sensor ultrasonik berada di luar rentang acuan tandon.'
         );
+      } else if (evalResult.tankMetrics.valid) {
+        if (evalResult.tankMetrics.levelPct <= cfg.tankLowWarnPct) {
+          this.emitNotification(
+            'water_low',
+            'warning',
+            'Level Air Tandon Rendah',
+            `Ketinggian air tandon ${Math.round(evalResult.tankMetrics.levelPct)}% (estimasi ${Math.round(evalResult.tankMetrics.volumeL)} L).`
+          );
+        } else if (evalResult.tankMetrics.levelPct >= cfg.tankHighWarnPct) {
+          this.emitNotification(
+            'water_full',
+            'info',
+            'Tandon Air Hampir Penuh',
+            `Ketinggian air mencapai ${Math.round(evalResult.tankMetrics.levelPct)}% (${Math.round(evalResult.tankMetrics.volumeL)} L).`
+          );
+        }
       }
 
       if (evalResult.turbStatus.code === 'danger' || evalResult.turbStatus.code === 'warning') {
@@ -2761,6 +2938,7 @@ input[type="range"] {
       Object.keys(p).forEach((k) => {
         SensorStore.current[k] = p[k];
       });
+      SensorStore.current.ultrasonicDistanceCm = +(SensorStore.config.tankRefHeightCm * (1 - p.waterLevelRaw / 100)).toFixed(1);
       SensorStore.current.tds = Math.round(SensorStore.current.ec * SensorStore.config.ecToTdsFactor);
       StatusEvaluator.emitNotification(
         `preset_${preset}`,
@@ -2845,7 +3023,7 @@ input[type="range"] {
           arr.push({
             timestamp: new Date(now - i * stepMs),
             waterLevelRaw: lvl,
-            detectedLevelPct: getDiscreteCapacitiveLevel(lvl),
+            detectedLevelPct: Math.round(lvl * 10) / 10,
             inletFlow: inlet,
             outletFlow: outlet,
             turbidity: turb,
@@ -2943,8 +3121,8 @@ input[type="range"] {
     initAll() {
       // Dashboard charts
       this.createLineChart('chart-dash-level', [
-        { label: 'Level Terdeteksi (%)', data: [], borderColor: '#2378A8', backgroundColor: 'rgba(35,120,168,0.08)', fill: true, stepped: true }
-      ], '%', true);
+        { label: 'Ketinggian Air (%)', data: [], borderColor: '#2378A8', backgroundColor: 'rgba(35,120,168,0.08)', fill: true }
+      ], '%');
 
       this.createLineChart('chart-dash-flow', [
         { label: 'Inlet (L/m)', data: [], borderColor: '#2378A8', fill: false },
@@ -2956,7 +3134,11 @@ input[type="range"] {
         { label: 'TDS / 100 (x100 ppm)', data: [], borderColor: '#2378A8', fill: false }
       ], '');
 
-      // Tandon flow chart
+      // Tandon monitoring charts
+      this.createLineChart('chart-tandon-level', [
+        { label: 'Ketinggian Air (%)', data: [], borderColor: '#2378A8', backgroundColor: 'rgba(35,120,168,0.08)', fill: true }
+      ], '%');
+
       this.createLineChart('chart-tandon-flow', [
         { label: 'Debit Inlet (L/min)', data: [], borderColor: '#2378A8', backgroundColor: 'rgba(35,120,168,0.08)', fill: true },
         { label: 'Debit Outlet (L/min)', data: [], borderColor: '#38866A', backgroundColor: 'rgba(56,134,106,0.06)', fill: true }
@@ -2975,7 +3157,7 @@ input[type="range"] {
       this.createLineChart('chart-gas-nh3', [{ label: 'NH₃ (ppm)', data: [], borderColor: '#2378A8', fill: false }], '');
 
       // History 8 charts
-      this.createLineChart('chart-hist-level', [{ label: 'Level (%)', data: [], borderColor: '#2378A8', fill: true, backgroundColor: 'rgba(35,120,168,0.08)', stepped: true }], '%', true);
+      this.createLineChart('chart-hist-level', [{ label: 'Level (%)', data: [], borderColor: '#2378A8', fill: true, backgroundColor: 'rgba(35,120,168,0.08)' }], '%');
       this.createLineChart('chart-hist-flow', [
         { label: 'Inlet (L/m)', data: [], borderColor: '#2378A8', fill: false },
         { label: 'Outlet (L/m)', data: [], borderColor: '#38866A', fill: false }
@@ -3010,7 +3192,12 @@ input[type="range"] {
       setChart('chart-dash-level', liveLabels, [live.map((p) => p.detectedLevelPct)]);
       setChart('chart-dash-flow', liveLabels, [live.map((p) => +p.inletFlow.toFixed(1)), live.map((p) => +p.outletFlow.toFixed(1))]);
       setChart('chart-dash-quality', liveLabels, [live.map((p) => +p.turbidity.toFixed(2)), live.map((p) => +(p.tds / 100).toFixed(2))]);
-      setChart('chart-tandon-flow', liveLabels, [live.map((p) => +p.inletFlow.toFixed(1)), live.map((p) => +p.outletFlow.toFixed(1))]);
+
+      // Tandon charts (respects selected range: 1h, 24h, 7d, 30d)
+      const tandonSeries = SensorStore.archives[SensorStore.tandonRange] || live;
+      const tandonLabels = tandonSeries.map((p) => formatHistoryLabel(p.timestamp, SensorStore.tandonRange));
+      setChart('chart-tandon-level', tandonLabels, [tandonSeries.map((p) => p.detectedLevelPct)]);
+      setChart('chart-tandon-flow', tandonLabels, [tandonSeries.map((p) => +p.inletFlow.toFixed(1)), tandonSeries.map((p) => +p.outletFlow.toFixed(1))]);
 
       setChart('chart-wq-turbidity', liveLabels, [live.map((p) => +p.turbidity.toFixed(2))]);
       setChart('chart-wq-tds', liveLabels, [live.map((p) => p.tds)]);
@@ -3072,14 +3259,19 @@ input[type="range"] {
       const quickPlayText = document.getElementById('dash-quick-play-text');
       if (quickPlayText) quickPlayText.textContent = SensorStore.simulationRunning ? 'Jeda Simulasi' : 'Lanjut Simulasi';
 
-      // Estimated volume from discrete level
-      const discretePct = evalResult.waterDiscrete;
-      const estVolL = Math.round((discretePct / 100) * cfg.tankCapacityL);
+      // Continuous ultrasonic tank metrics
+      const tm = evalResult.tankMetrics;
+      const levelPctRounded = tm.valid ? Math.round(tm.levelPct) : 0;
+      const estVolL = tm.valid ? Math.round(tm.volumeL) : 0;
 
       // --- Dashboard KPIs ---
-      document.getElementById('kpi-water-pct').textContent = discretePct;
-      document.getElementById('kpi-water-vol').textContent = `Estimasi ~${estVolL.toLocaleString('id-ID')} L / ${cfg.tankCapacityL.toLocaleString('id-ID')} L`;
-      document.getElementById('kpi-water-tier').textContent = discretePct === 0 ? 'Di bawah 25%' : `Titik ${discretePct}% aktif`;
+      document.getElementById('kpi-water-pct').textContent = tm.valid ? levelPctRounded : '--';
+      document.getElementById('kpi-water-vol').textContent = tm.valid
+        ? `Estimasi ~${estVolL.toLocaleString('id-ID')} L / ${cfg.tankCapacityL.toLocaleString('id-ID')} L`
+        : 'Data level tidak tersedia';
+      document.getElementById('kpi-water-tier').textContent = tm.valid
+        ? `Tinggi ${tm.heightCm.toFixed(1)} cm`
+        : evalResult.waterStatus.label;
       this.applyBadge(document.getElementById('kpi-water-badge'), evalResult.waterStatus);
 
       document.getElementById('kpi-turbidity').textContent = errSensor === 'turbidity' ? 'ERR' : c.turbidity.toFixed(1);
@@ -3097,33 +3289,55 @@ input[type="range"] {
       document.getElementById('kpi-last-update').textContent = formatTimeShort(c.timestamp);
       this.applyBadge(document.getElementById('kpi-sys-badge'), online ? { code: 'normal', label: 'Online' } : { code: 'danger', label: 'Offline' });
 
-      // --- Page 2: Monitoring Tandon ---
+      // --- Page 2: Monitoring Tandon (Ultrasonik Kontinu) ---
+      document.getElementById('tandon-last-update').textContent = formatTimeShort(c.timestamp);
       document.getElementById('tandon-max-cap-label').textContent = cfg.tankCapacityL.toLocaleString('id-ID');
       document.getElementById('tandon-max-vol').textContent = `${cfg.tankCapacityL.toLocaleString('id-ID')} L`;
-      document.getElementById('tandon-visual-pct').textContent = `${discretePct}%`;
-      document.getElementById('tandon-detected-pct').textContent = discretePct === 0 ? '< 25%' : `${discretePct}%`;
-      document.getElementById('tandon-est-vol').textContent = `~${estVolL.toLocaleString('id-ID')} L`;
+      document.getElementById('tandon-max-vol-box').textContent = `${cfg.tankCapacityL.toLocaleString('id-ID')} L`;
+      document.getElementById('tandon-ref-height-label').textContent = cfg.tankRefHeightCm;
       this.applyBadge(document.getElementById('tandon-status-badge'), evalResult.waterStatus);
 
-      const rangeTextMap = {
-        100: 'Tangki Penuh (100%)',
-        75: 'Rentang terdeteksi: 75% – 99%',
-        50: 'Rentang terdeteksi: 50% – 74%',
-        25: 'Rentang terdeteksi: 25% – 49%',
-        0: 'Rentang terdeteksi: < 25% (Kritis)'
-      };
-      document.getElementById('tandon-sensor-range').textContent = rangeTextMap[discretePct];
+      document.getElementById('tandon-visual-pct').textContent = tm.valid ? `${levelPctRounded}%` : 'ERR';
+      document.getElementById('tandon-detected-pct').textContent = tm.valid ? `${levelPctRounded}%` : '--';
+      document.getElementById('tandon-est-vol').textContent = tm.valid ? `${estVolL.toLocaleString('id-ID')} L` : '--';
+      document.getElementById('tandon-visual-dist').textContent = tm.valid ? `${Math.round(tm.distanceCm)} cm` : 'ERR';
+
+      const levelNoteEl = document.getElementById('tandon-level-note');
+      if (!online) {
+        levelNoteEl.textContent = 'Perangkat tidak terhubung';
+      } else if (!tm.valid) {
+        levelNoteEl.textContent = tm.reason === 'blind_zone' ? 'Di dalam blind zone sensor' : 'Pembacaan sensor tidak valid';
+      } else if (evalResult.waterStatus.label === 'Rendah') {
+        levelNoteEl.textContent = 'Volume air perlu diperhatikan';
+      } else if (evalResult.waterStatus.label === 'Penuh') {
+        levelNoteEl.textContent = 'Mendekati kapasitas maksimum';
+      } else {
+        levelNoteEl.textContent = 'Kondisi air mencukupi';
+      }
 
       const waterFillEl = document.getElementById('tandon-water-fill');
-      waterFillEl.style.height = `${discretePct}%`;
-      waterFillEl.style.backgroundColor = discretePct <= 25 ? '#D69A38' : '#2378A8';
+      const beamZoneEl = document.getElementById('tandon-beam-zone');
+      const visualHeightPct = tm.valid ? Math.max(0, Math.min(100, tm.levelPct)) : 0;
+      waterFillEl.style.height = `${visualHeightPct}%`;
+      beamZoneEl.style.height = `${100 - visualHeightPct}%`;
+      waterFillEl.style.backgroundColor = !tm.valid
+        ? '#94A3B0'
+        : evalResult.waterStatus.label === 'Rendah'
+          ? '#D69A38'
+          : '#2378A8';
 
       const fillStatusEl = document.getElementById('tandon-fill-status');
       const fillSubEl = document.getElementById('tandon-fill-sub');
-      if (c.inletFlow > 0.5) {
+      if (!online) {
+        fillStatusEl.textContent = 'Offline';
+        fillSubEl.textContent = 'Menunggu koneksi perangkat';
+      } else if (!tm.valid) {
+        fillStatusEl.textContent = 'Sensor Error';
+        fillSubEl.textContent = 'Periksa sensor ultrasonik';
+      } else if (c.inletFlow > 0.5) {
         fillStatusEl.textContent = 'Mengisi';
         fillSubEl.textContent = `Debit masuk ${c.inletFlow.toFixed(1)} L/min`;
-      } else if (discretePct === 100) {
+      } else if (tm.levelPct >= cfg.tankHighWarnPct) {
         fillStatusEl.textContent = 'Penuh';
         fillSubEl.textContent = 'Katup inlet tertutup';
       } else {
@@ -3131,30 +3345,32 @@ input[type="range"] {
         fillSubEl.textContent = 'Pompa inlet siaga';
       }
 
-      // Capacitive 4-point nodes
-      const nodes = getCapacitiveNodesState(c.waterLevelRaw);
-      const detailList = document.getElementById('capacitive-detail-list');
-      detailList.innerHTML = '';
-      nodes.forEach((n) => {
-        const pill = document.getElementById(`cap-node-${n.threshold}`);
-        if (pill) {
-          pill.className = `sensor-node-pill ${n.active ? 'active' : 'inactive'}`;
-          pill.querySelector('.dot').className = `dot ${n.active ? 'dot-success' : 'dot-neutral'}`;
-        }
-        const row = document.createElement('div');
-        row.className = 'metric-box';
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.justifyContent = 'space-between';
-        row.innerHTML = `
-          <div>
-            <div style="font-weight: 600; font-size: 13px;">Titik Sensor ${n.threshold}%</div>
-            <div class="sub">Kapasitif eksternal dinding tandon</div>
-          </div>
-          <span class="status-badge ${n.active ? 'status-normal' : 'status-error'}">${n.active ? 'Aktif' : 'Tidak Aktif'}</span>
-        `;
-        detailList.appendChild(row);
-      });
+      // Ultrasonic Sensor Card
+      this.applyBadge(document.getElementById('us-sensor-badge'), evalResult.ultrasonicStatus);
+      this.applyBadge(document.getElementById('us-sensor-state-badge'), evalResult.ultrasonicStatus);
+      document.getElementById('us-blind-zone-label').textContent = cfg.ultrasonicBlindZoneCm;
+      document.getElementById('us-ref-height-label').textContent = cfg.tankRefHeightCm;
+
+      if (!online) {
+        document.getElementById('us-distance-val').textContent = '-- cm';
+        document.getElementById('us-height-val').textContent = '-- cm';
+        document.getElementById('us-pct-val').textContent = '--%';
+        document.getElementById('us-sensor-sub').textContent = 'Perangkat offline';
+      } else if (!tm.valid) {
+        document.getElementById('us-distance-val').textContent = tm.distanceCm !== null ? `${tm.distanceCm.toFixed(1)} cm` : 'ERR';
+        document.getElementById('us-height-val').textContent = 'ERR';
+        document.getElementById('us-pct-val').textContent = 'ERR';
+        document.getElementById('us-sensor-sub').textContent = tm.reason === 'blind_zone' ? 'Melewati batas blind zone' : 'Sinyal tidak valid';
+      } else {
+        document.getElementById('us-distance-val').textContent = `${tm.distanceCm.toFixed(1)} cm`;
+        document.getElementById('us-height-val').textContent = `${tm.heightCm.toFixed(1)} cm`;
+        document.getElementById('us-pct-val').textContent = `${tm.levelPct.toFixed(1)}%`;
+        document.getElementById('us-sensor-sub').textContent = 'Pembacaan valid';
+      }
+
+      const tandonRangeLabels = { '1h': '1 Jam Terakhir', '24h': '24 Jam Terakhir', '7d': '7 Hari Terakhir', '30d': '30 Hari Terakhir' };
+      const tandonLbl = document.getElementById('tandon-chart-range-label');
+      if (tandonLbl) tandonLbl.textContent = `Rentang: ${tandonRangeLabels[SensorStore.tandonRange]}`;
 
       // Flow INLET & OUTLET
       document.getElementById('inlet-flow-rate').textContent = c.inletFlow.toFixed(1);
@@ -3450,6 +3666,7 @@ input[type="range"] {
     bindSlider('slider-level', (v) => {
       SensorStore.current.waterLevelRaw = v;
       SensorStore.targets.waterLevelRaw = v;
+      SensorStore.current.ultrasonicDistanceCm = +(SensorStore.config.tankRefHeightCm * (1 - v / 100)).toFixed(1);
       document.getElementById('val-slider-level').textContent = `${Math.round(v)}%`;
     });
 
@@ -3508,6 +3725,14 @@ input[type="range"] {
   }
 
   function setupHistoryAndNotifications() {
+    document.querySelectorAll('#tandon-range-group button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#tandon-range-group button').forEach((b) => b.classList.toggle('active', b === btn));
+        SensorStore.tandonRange = btn.getAttribute('data-range');
+        App.refreshAll();
+      });
+    });
+
     document.querySelectorAll('#history-filter-group button').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('#history-filter-group button').forEach((b) => b.classList.toggle('active', b === btn));
@@ -3567,6 +3792,9 @@ input[type="range"] {
     document.getElementById('btn-save-settings').addEventListener('click', () => {
       const cfg = SensorStore.config;
       cfg.tankCapacityL = Math.max(250, parseInt(document.getElementById('cfg-tank-cap').value, 10) || 1000);
+      cfg.tankRefHeightCm = Math.max(60, parseInt(document.getElementById('cfg-tank-ref-height').value, 10) || 120);
+      cfg.tankLowWarnPct = Math.max(5, Math.min(45, parseInt(document.getElementById('cfg-tank-low-warn').value, 10) || 25));
+      cfg.tankHighWarnPct = Math.max(70, Math.min(98, parseInt(document.getElementById('cfg-tank-high-warn').value, 10) || 85));
       cfg.septicCapacityL = Math.max(500, parseInt(document.getElementById('cfg-septic-cap').value, 10) || 2000);
       cfg.septicHeightCm = Math.max(80, parseInt(document.getElementById('cfg-septic-height').value, 10) || 150);
       cfg.ecToTdsFactor = Math.max(0.45, Math.min(0.75, parseFloat(document.getElementById('cfg-tds-factor').value) || 0.50));
@@ -3578,6 +3806,7 @@ input[type="range"] {
       cfg.deviceOnline = document.getElementById('cfg-device-online').value === 'online';
       cfg.simulatedErrorSensor = document.getElementById('cfg-sensor-error').value;
 
+      SensorStore.current.ultrasonicDistanceCm = +(cfg.tankRefHeightCm * (1 - SensorStore.current.waterLevelRaw / 100)).toFixed(1);
       SensorStore.current.tds = Math.round(SensorStore.current.ec * cfg.ecToTdsFactor);
       if (SensorStore.simulationRunning) SimulationEngine.start();
       StatusEvaluator.emitNotification('cfg_saved', 'info', 'Pengaturan Diterapkan', 'Konfigurasi tandon, ambang batas, dan parameter simulasi diperbarui.');
@@ -3587,6 +3816,9 @@ input[type="range"] {
     document.getElementById('btn-reset-settings').addEventListener('click', () => {
       SensorStore.config = { ...DEFAULT_CONFIG };
       document.getElementById('cfg-tank-cap').value = DEFAULT_CONFIG.tankCapacityL;
+      document.getElementById('cfg-tank-ref-height').value = DEFAULT_CONFIG.tankRefHeightCm;
+      document.getElementById('cfg-tank-low-warn').value = DEFAULT_CONFIG.tankLowWarnPct;
+      document.getElementById('cfg-tank-high-warn').value = DEFAULT_CONFIG.tankHighWarnPct;
       document.getElementById('cfg-septic-cap').value = DEFAULT_CONFIG.septicCapacityL;
       document.getElementById('cfg-septic-height').value = DEFAULT_CONFIG.septicHeightCm;
       document.getElementById('cfg-tds-factor').value = DEFAULT_CONFIG.ecToTdsFactor;
@@ -3597,6 +3829,7 @@ input[type="range"] {
       document.getElementById('cfg-sim-interval').value = String(DEFAULT_CONFIG.simIntervalMs);
       document.getElementById('cfg-device-online').value = 'online';
       document.getElementById('cfg-sensor-error').value = 'none';
+      SensorStore.current.ultrasonicDistanceCm = +(DEFAULT_CONFIG.tankRefHeightCm * (1 - SensorStore.current.waterLevelRaw / 100)).toFixed(1);
       if (SensorStore.simulationRunning) SimulationEngine.start();
       App.refreshAll();
     });
@@ -3649,6 +3882,8 @@ input[type="range"] {
   });
 })();
 
+
 </script>
 </body>
 </html>
+

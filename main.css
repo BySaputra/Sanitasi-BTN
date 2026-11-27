@@ -753,30 +753,64 @@ body {
 }
 
 /* ==========================================================================
-   Tank & Capacitive Sensor Visualization (Page 2)
+   Tank & Ultrasonic Sensor Visualization (Page 2)
    ========================================================================== */
 
 .tank-layout {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 24px;
   align-items: center;
 }
 
 .tank-visual-wrap {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 12px 0;
+  padding: 6px 0;
+}
+
+.tank-ultrasonic-mount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: -2px;
+  z-index: 3;
+}
+
+.ultrasonic-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px 8px 3px 3px;
+  background: var(--primary-deep);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ultrasonic-transducer {
+  width: 28px;
+  height: 6px;
+  background: #4F6B7E;
+  border-radius: 0 0 4px 4px;
+}
+
+.tank-visual-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
 }
 
 .tank-cylinder {
   position: relative;
-  width: 148px;
-  height: 270px;
+  width: 156px;
+  height: 260px;
   border: 2px solid var(--border-strong);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--bg-main);
   overflow: hidden;
   display: flex;
@@ -784,11 +818,42 @@ body {
   justify-content: flex-end;
 }
 
+.ultrasonic-beam-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+  transition: height 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ultrasonic-beam-line {
+  width: 0;
+  flex: 1;
+  border-left: 1.5px dashed rgba(35, 120, 168, 0.5);
+}
+
+.ultrasonic-dist-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--primary-deep);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #CFE3EE;
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin: 4px 0;
+}
+
 .tank-water {
   width: 100%;
   background: var(--primary);
-  opacity: 0.86;
-  transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease;
+  opacity: 0.88;
+  transition: height 0.55s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease;
   position: relative;
 }
 
@@ -798,14 +863,14 @@ body {
   left: 0;
   right: 0;
   height: 4px;
-  background: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.42);
 }
 
 .tank-level-line {
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 1px dashed rgba(38, 55, 70, 0.25);
+  border-top: 1px dashed rgba(38, 55, 70, 0.16);
   pointer-events: none;
 }
 
@@ -817,48 +882,27 @@ body {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
 .tank-level-label strong {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   padding: 3px 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
 }
 
-.tank-sensors-rail {
+.tank-scale-rail {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   justify-content: space-between;
-  height: 246px;
-}
-
-.sensor-node-pill {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 9px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-main);
-  font-size: 11.5px;
-  color: var(--text-secondary);
-}
-
-.sensor-node-pill.active {
-  background: var(--success-bg);
-  border-color: var(--success-border);
-  color: var(--success);
-  font-weight: 600;
-}
-
-.sensor-node-pill.inactive {
-  background: var(--bg-main);
+  padding: 4px 0;
+  font-size: 11px;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .tank-metrics-grid {

@@ -17,6 +17,10 @@
   // ------------------------------------------------------------------------
   const DEFAULT_CONFIG = {
     tankCapacityL: 1000,
+    tankRefHeightCm: 120,
+    ultrasonicBlindZoneCm: 10,
+    tankLowWarnPct: 25,
+    tankHighWarnPct: 85,
     septicCapacityL: 2000,
     septicHeightCm: 150,
     ecToTdsFactor: 0.50,
@@ -44,13 +48,15 @@
     simulationRunning: true,
     activePreset: 'normal',
     activePage: 'dashboard',
+    tandonRange: '1h',
     historyRange: '1h',
     notifFilter: 'all',
 
     // Current live telemetry
     current: {
       timestamp: new Date(),
-      waterLevelRaw: 78, // internal physical water height (%) for discrete 4-point capacitive sensor
+      waterLevelRaw: 78, // target/simulated water level (%)
+      ultrasonicDistanceCm: 26.4, // measured distance from top sensor to water surface
       inletFlow: 11.8,   // L/min
       outletFlow: 7.4,   // L/min
       inletTotalL: 482.5,
@@ -101,9 +107,15 @@
      */
     ingestTelemetry(payload) {
       const prev = this.current;
+      const nextRawPct = payload.waterLevelRaw ?? prev.waterLevelRaw;
+      const nextDistCm = payload.ultrasonicDistanceCm !== undefined
+        ? payload.ultrasonicDistanceCm
+        : +(this.config.tankRefHeightCm * (1 - nextRawPct / 100)).toFixed(1);
+
       this.current = {
         ...prev,
         ...payload,
+        ultrasonicDistanceCm: nextDistCm,
         tds: Math.round((payload.ec ?? prev.ec) * this.config.ecToTdsFactor),
         timestamp: payload.timestamp ? new Date(payload.timestamp) : new Date()
       };
@@ -111,9 +123,10 @@
     },
 
     pushSnapshot(snapshot) {
+      const metrics = computeUltrasonicTankMetrics(snapshot.ultrasonicDistanceCm);
       const point = {
         ...snapshot,
-        detectedLevelPct: getDiscreteCapacitiveLevel(snapshot.waterLevelRaw)
+        detectedLevelPct: metrics.valid ? Math.round(metrics.levelPct * 10) / 10 : Math.round(snapshot.waterLevelRaw)
       };
       this.liveSeries.push(point);
       if (this.liveSeries.length > 30) {
@@ -126,22 +139,52 @@
     }
   };
 
-  // Discrete 4-point capacitive sensor helper (25%, 50%, 75%, 100%)
-  function getDiscreteCapacitiveLevel(rawPct) {
-    if (rawPct >= 100) return 100;
-    if (rawPct >= 75) return 75;
-    if (rawPct >= 50) return 50;
-    if (rawPct >= 25) return 25;
-    return 0;
-  }
+  /**
+   * Continuous ultrasonic water level calculation with blind-zone & range validation:
+   * Tinggi air = Tinggi acuan tandon - Jarak sensor ke permukaan air
+   * Level (%)  = (Tinggi air / Tinggi acuan tandon) * 100%
+   * Volume (L) = (Level (%) / 100) * Kapasitas maksimum tandon
+   */
+  function computeUltrasonicTankMetrics(distanceCm) {
+    const cfg = SensorStore.config;
+    const refCm = cfg.tankRefHeightCm;
+    const blindCm = cfg.ultrasonicBlindZoneCm;
 
-  function getCapacitiveNodesState(rawPct) {
-    return [
-      { threshold: 25, active: rawPct >= 25 },
-      { threshold: 50, active: rawPct >= 50 },
-      { threshold: 75, active: rawPct >= 75 },
-      { threshold: 100, active: rawPct >= 100 }
-    ];
+    if (!cfg.deviceOnline) {
+      return {
+        valid: false,
+        reason: 'offline',
+        distanceCm: null,
+        heightCm: 0,
+        levelPct: 0,
+        volumeL: 0
+      };
+    }
+
+    const outOfRange = !Number.isFinite(distanceCm) || distanceCm < blindCm || distanceCm > refCm;
+    if (cfg.simulatedErrorSensor === 'ultrasonic' || outOfRange) {
+      return {
+        valid: false,
+        reason: distanceCm < blindCm ? 'blind_zone' : 'sensor_error',
+        distanceCm: Number.isFinite(distanceCm) ? distanceCm : null,
+        heightCm: 0,
+        levelPct: 0,
+        volumeL: 0
+      };
+    }
+
+    const heightCm = Math.max(0, Math.min(refCm, refCm - distanceCm));
+    const levelPct = Math.max(0, Math.min(100, (heightCm / refCm) * 100));
+    const volumeL = Math.max(0, Math.min(cfg.tankCapacityL, (levelPct / 100) * cfg.tankCapacityL));
+
+    return {
+      valid: true,
+      reason: 'ok',
+      distanceCm,
+      heightCm,
+      levelPct,
+      volumeL
+    };
   }
 
   // ------------------------------------------------------------------------
@@ -153,10 +196,21 @@
       const cfg = SensorStore.config;
       const errSensor = cfg.simulatedErrorSensor;
 
-      const waterDiscrete = getDiscreteCapacitiveLevel(c.waterLevelRaw);
+      const tankMetrics = computeUltrasonicTankMetrics(c.ultrasonicDistanceCm);
       let waterStatus = { code: 'normal', label: 'Normal' };
-      if (waterDiscrete <= 25) waterStatus = { code: 'danger', label: 'Rendah' };
-      else if (waterDiscrete === 100) waterStatus = { code: 'info', label: 'Penuh' };
+      let ultrasonicStatus = { code: 'normal', label: 'Aktif' };
+
+      if (!cfg.deviceOnline) {
+        waterStatus = { code: 'danger', label: 'Offline' };
+        ultrasonicStatus = { code: 'danger', label: 'Tidak Terhubung' };
+      } else if (!tankMetrics.valid) {
+        waterStatus = { code: 'error', label: 'Sensor Error' };
+        ultrasonicStatus = { code: 'error', label: 'Error' };
+      } else if (tankMetrics.levelPct <= cfg.tankLowWarnPct) {
+        waterStatus = { code: 'danger', label: 'Rendah' };
+      } else if (tankMetrics.levelPct >= cfg.tankHighWarnPct) {
+        waterStatus = { code: 'info', label: 'Penuh' };
+      }
 
       const turbStatus = errSensor === 'turbidity'
         ? { code: 'error', label: 'Sensor Error' }
@@ -226,8 +280,9 @@
       const activeSensors = errSensor === 'none' ? 10 : 9;
 
       return {
-        waterDiscrete,
+        tankMetrics,
         waterStatus,
+        ultrasonicStatus,
         turbStatus,
         tdsStatus,
         phStatus,
@@ -261,13 +316,31 @@
         );
       }
 
-      if (evalResult.waterDiscrete <= 25) {
+      if (!evalResult.tankMetrics.valid && cfg.simulatedErrorSensor !== 'ultrasonic') {
         this.emitNotification(
-          'water_low',
+          'ultrasonic_range',
           'warning',
-          'Level Air Tandon Rendah',
-          `Sensor kapasitif mendeteksi ketinggian air <= ${evalResult.waterDiscrete}% (estimasi ~${Math.round((evalResult.waterDiscrete / 100) * cfg.tankCapacityL)} L).`
+          'Pembacaan Sensor Ultrasonik Tidak Valid',
+          evalResult.tankMetrics.reason === 'blind_zone'
+            ? `Jarak permukaan air (${evalResult.tankMetrics.distanceCm?.toFixed(1)} cm) berada di dalam blind zone (< ${cfg.ultrasonicBlindZoneCm} cm).`
+            : 'Jarak pembacaan sensor ultrasonik berada di luar rentang acuan tandon.'
         );
+      } else if (evalResult.tankMetrics.valid) {
+        if (evalResult.tankMetrics.levelPct <= cfg.tankLowWarnPct) {
+          this.emitNotification(
+            'water_low',
+            'warning',
+            'Level Air Tandon Rendah',
+            `Ketinggian air tandon ${Math.round(evalResult.tankMetrics.levelPct)}% (estimasi ${Math.round(evalResult.tankMetrics.volumeL)} L).`
+          );
+        } else if (evalResult.tankMetrics.levelPct >= cfg.tankHighWarnPct) {
+          this.emitNotification(
+            'water_full',
+            'info',
+            'Tandon Air Hampir Penuh',
+            `Ketinggian air mencapai ${Math.round(evalResult.tankMetrics.levelPct)}% (${Math.round(evalResult.tankMetrics.volumeL)} L).`
+          );
+        }
       }
 
       if (evalResult.turbStatus.code === 'danger' || evalResult.turbStatus.code === 'warning') {
@@ -435,6 +508,7 @@
       Object.keys(p).forEach((k) => {
         SensorStore.current[k] = p[k];
       });
+      SensorStore.current.ultrasonicDistanceCm = +(SensorStore.config.tankRefHeightCm * (1 - p.waterLevelRaw / 100)).toFixed(1);
       SensorStore.current.tds = Math.round(SensorStore.current.ec * SensorStore.config.ecToTdsFactor);
       StatusEvaluator.emitNotification(
         `preset_${preset}`,
@@ -519,7 +593,7 @@
           arr.push({
             timestamp: new Date(now - i * stepMs),
             waterLevelRaw: lvl,
-            detectedLevelPct: getDiscreteCapacitiveLevel(lvl),
+            detectedLevelPct: Math.round(lvl * 10) / 10,
             inletFlow: inlet,
             outletFlow: outlet,
             turbidity: turb,
@@ -617,8 +691,8 @@
     initAll() {
       // Dashboard charts
       this.createLineChart('chart-dash-level', [
-        { label: 'Level Terdeteksi (%)', data: [], borderColor: '#2378A8', backgroundColor: 'rgba(35,120,168,0.08)', fill: true, stepped: true }
-      ], '%', true);
+        { label: 'Ketinggian Air (%)', data: [], borderColor: '#2378A8', backgroundColor: 'rgba(35,120,168,0.08)', fill: true }
+      ], '%');
 
       this.createLineChart('chart-dash-flow', [
         { label: 'Inlet (L/m)', data: [], borderColor: '#2378A8', fill: false },
@@ -630,7 +704,11 @@
         { label: 'TDS / 100 (x100 ppm)', data: [], borderColor: '#2378A8', fill: false }
       ], '');
 
-      // Tandon flow chart
+      // Tandon monitoring charts
+      this.createLineChart('chart-tandon-level', [
+        { label: 'Ketinggian Air (%)', data: [], borderColor: '#2378A8', backgroundColor: 'rgba(35,120,168,0.08)', fill: true }
+      ], '%');
+
       this.createLineChart('chart-tandon-flow', [
         { label: 'Debit Inlet (L/min)', data: [], borderColor: '#2378A8', backgroundColor: 'rgba(35,120,168,0.08)', fill: true },
         { label: 'Debit Outlet (L/min)', data: [], borderColor: '#38866A', backgroundColor: 'rgba(56,134,106,0.06)', fill: true }
@@ -649,7 +727,7 @@
       this.createLineChart('chart-gas-nh3', [{ label: 'NH₃ (ppm)', data: [], borderColor: '#2378A8', fill: false }], '');
 
       // History 8 charts
-      this.createLineChart('chart-hist-level', [{ label: 'Level (%)', data: [], borderColor: '#2378A8', fill: true, backgroundColor: 'rgba(35,120,168,0.08)', stepped: true }], '%', true);
+      this.createLineChart('chart-hist-level', [{ label: 'Level (%)', data: [], borderColor: '#2378A8', fill: true, backgroundColor: 'rgba(35,120,168,0.08)' }], '%');
       this.createLineChart('chart-hist-flow', [
         { label: 'Inlet (L/m)', data: [], borderColor: '#2378A8', fill: false },
         { label: 'Outlet (L/m)', data: [], borderColor: '#38866A', fill: false }
@@ -684,7 +762,12 @@
       setChart('chart-dash-level', liveLabels, [live.map((p) => p.detectedLevelPct)]);
       setChart('chart-dash-flow', liveLabels, [live.map((p) => +p.inletFlow.toFixed(1)), live.map((p) => +p.outletFlow.toFixed(1))]);
       setChart('chart-dash-quality', liveLabels, [live.map((p) => +p.turbidity.toFixed(2)), live.map((p) => +(p.tds / 100).toFixed(2))]);
-      setChart('chart-tandon-flow', liveLabels, [live.map((p) => +p.inletFlow.toFixed(1)), live.map((p) => +p.outletFlow.toFixed(1))]);
+
+      // Tandon charts (respects selected range: 1h, 24h, 7d, 30d)
+      const tandonSeries = SensorStore.archives[SensorStore.tandonRange] || live;
+      const tandonLabels = tandonSeries.map((p) => formatHistoryLabel(p.timestamp, SensorStore.tandonRange));
+      setChart('chart-tandon-level', tandonLabels, [tandonSeries.map((p) => p.detectedLevelPct)]);
+      setChart('chart-tandon-flow', tandonLabels, [tandonSeries.map((p) => +p.inletFlow.toFixed(1)), tandonSeries.map((p) => +p.outletFlow.toFixed(1))]);
 
       setChart('chart-wq-turbidity', liveLabels, [live.map((p) => +p.turbidity.toFixed(2))]);
       setChart('chart-wq-tds', liveLabels, [live.map((p) => p.tds)]);
@@ -746,14 +829,19 @@
       const quickPlayText = document.getElementById('dash-quick-play-text');
       if (quickPlayText) quickPlayText.textContent = SensorStore.simulationRunning ? 'Jeda Simulasi' : 'Lanjut Simulasi';
 
-      // Estimated volume from discrete level
-      const discretePct = evalResult.waterDiscrete;
-      const estVolL = Math.round((discretePct / 100) * cfg.tankCapacityL);
+      // Continuous ultrasonic tank metrics
+      const tm = evalResult.tankMetrics;
+      const levelPctRounded = tm.valid ? Math.round(tm.levelPct) : 0;
+      const estVolL = tm.valid ? Math.round(tm.volumeL) : 0;
 
       // --- Dashboard KPIs ---
-      document.getElementById('kpi-water-pct').textContent = discretePct;
-      document.getElementById('kpi-water-vol').textContent = `Estimasi ~${estVolL.toLocaleString('id-ID')} L / ${cfg.tankCapacityL.toLocaleString('id-ID')} L`;
-      document.getElementById('kpi-water-tier').textContent = discretePct === 0 ? 'Di bawah 25%' : `Titik ${discretePct}% aktif`;
+      document.getElementById('kpi-water-pct').textContent = tm.valid ? levelPctRounded : '--';
+      document.getElementById('kpi-water-vol').textContent = tm.valid
+        ? `Estimasi ~${estVolL.toLocaleString('id-ID')} L / ${cfg.tankCapacityL.toLocaleString('id-ID')} L`
+        : 'Data level tidak tersedia';
+      document.getElementById('kpi-water-tier').textContent = tm.valid
+        ? `Tinggi ${tm.heightCm.toFixed(1)} cm`
+        : evalResult.waterStatus.label;
       this.applyBadge(document.getElementById('kpi-water-badge'), evalResult.waterStatus);
 
       document.getElementById('kpi-turbidity').textContent = errSensor === 'turbidity' ? 'ERR' : c.turbidity.toFixed(1);
@@ -771,33 +859,55 @@
       document.getElementById('kpi-last-update').textContent = formatTimeShort(c.timestamp);
       this.applyBadge(document.getElementById('kpi-sys-badge'), online ? { code: 'normal', label: 'Online' } : { code: 'danger', label: 'Offline' });
 
-      // --- Page 2: Monitoring Tandon ---
+      // --- Page 2: Monitoring Tandon (Ultrasonik Kontinu) ---
+      document.getElementById('tandon-last-update').textContent = formatTimeShort(c.timestamp);
       document.getElementById('tandon-max-cap-label').textContent = cfg.tankCapacityL.toLocaleString('id-ID');
       document.getElementById('tandon-max-vol').textContent = `${cfg.tankCapacityL.toLocaleString('id-ID')} L`;
-      document.getElementById('tandon-visual-pct').textContent = `${discretePct}%`;
-      document.getElementById('tandon-detected-pct').textContent = discretePct === 0 ? '< 25%' : `${discretePct}%`;
-      document.getElementById('tandon-est-vol').textContent = `~${estVolL.toLocaleString('id-ID')} L`;
+      document.getElementById('tandon-max-vol-box').textContent = `${cfg.tankCapacityL.toLocaleString('id-ID')} L`;
+      document.getElementById('tandon-ref-height-label').textContent = cfg.tankRefHeightCm;
       this.applyBadge(document.getElementById('tandon-status-badge'), evalResult.waterStatus);
 
-      const rangeTextMap = {
-        100: 'Tangki Penuh (100%)',
-        75: 'Rentang terdeteksi: 75% – 99%',
-        50: 'Rentang terdeteksi: 50% – 74%',
-        25: 'Rentang terdeteksi: 25% – 49%',
-        0: 'Rentang terdeteksi: < 25% (Kritis)'
-      };
-      document.getElementById('tandon-sensor-range').textContent = rangeTextMap[discretePct];
+      document.getElementById('tandon-visual-pct').textContent = tm.valid ? `${levelPctRounded}%` : 'ERR';
+      document.getElementById('tandon-detected-pct').textContent = tm.valid ? `${levelPctRounded}%` : '--';
+      document.getElementById('tandon-est-vol').textContent = tm.valid ? `${estVolL.toLocaleString('id-ID')} L` : '--';
+      document.getElementById('tandon-visual-dist').textContent = tm.valid ? `${Math.round(tm.distanceCm)} cm` : 'ERR';
+
+      const levelNoteEl = document.getElementById('tandon-level-note');
+      if (!online) {
+        levelNoteEl.textContent = 'Perangkat tidak terhubung';
+      } else if (!tm.valid) {
+        levelNoteEl.textContent = tm.reason === 'blind_zone' ? 'Di dalam blind zone sensor' : 'Pembacaan sensor tidak valid';
+      } else if (evalResult.waterStatus.label === 'Rendah') {
+        levelNoteEl.textContent = 'Volume air perlu diperhatikan';
+      } else if (evalResult.waterStatus.label === 'Penuh') {
+        levelNoteEl.textContent = 'Mendekati kapasitas maksimum';
+      } else {
+        levelNoteEl.textContent = 'Kondisi air mencukupi';
+      }
 
       const waterFillEl = document.getElementById('tandon-water-fill');
-      waterFillEl.style.height = `${discretePct}%`;
-      waterFillEl.style.backgroundColor = discretePct <= 25 ? '#D69A38' : '#2378A8';
+      const beamZoneEl = document.getElementById('tandon-beam-zone');
+      const visualHeightPct = tm.valid ? Math.max(0, Math.min(100, tm.levelPct)) : 0;
+      waterFillEl.style.height = `${visualHeightPct}%`;
+      beamZoneEl.style.height = `${100 - visualHeightPct}%`;
+      waterFillEl.style.backgroundColor = !tm.valid
+        ? '#94A3B0'
+        : evalResult.waterStatus.label === 'Rendah'
+          ? '#D69A38'
+          : '#2378A8';
 
       const fillStatusEl = document.getElementById('tandon-fill-status');
       const fillSubEl = document.getElementById('tandon-fill-sub');
-      if (c.inletFlow > 0.5) {
+      if (!online) {
+        fillStatusEl.textContent = 'Offline';
+        fillSubEl.textContent = 'Menunggu koneksi perangkat';
+      } else if (!tm.valid) {
+        fillStatusEl.textContent = 'Sensor Error';
+        fillSubEl.textContent = 'Periksa sensor ultrasonik';
+      } else if (c.inletFlow > 0.5) {
         fillStatusEl.textContent = 'Mengisi';
         fillSubEl.textContent = `Debit masuk ${c.inletFlow.toFixed(1)} L/min`;
-      } else if (discretePct === 100) {
+      } else if (tm.levelPct >= cfg.tankHighWarnPct) {
         fillStatusEl.textContent = 'Penuh';
         fillSubEl.textContent = 'Katup inlet tertutup';
       } else {
@@ -805,30 +915,32 @@
         fillSubEl.textContent = 'Pompa inlet siaga';
       }
 
-      // Capacitive 4-point nodes
-      const nodes = getCapacitiveNodesState(c.waterLevelRaw);
-      const detailList = document.getElementById('capacitive-detail-list');
-      detailList.innerHTML = '';
-      nodes.forEach((n) => {
-        const pill = document.getElementById(`cap-node-${n.threshold}`);
-        if (pill) {
-          pill.className = `sensor-node-pill ${n.active ? 'active' : 'inactive'}`;
-          pill.querySelector('.dot').className = `dot ${n.active ? 'dot-success' : 'dot-neutral'}`;
-        }
-        const row = document.createElement('div');
-        row.className = 'metric-box';
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.justifyContent = 'space-between';
-        row.innerHTML = `
-          <div>
-            <div style="font-weight: 600; font-size: 13px;">Titik Sensor ${n.threshold}%</div>
-            <div class="sub">Kapasitif eksternal dinding tandon</div>
-          </div>
-          <span class="status-badge ${n.active ? 'status-normal' : 'status-error'}">${n.active ? 'Aktif' : 'Tidak Aktif'}</span>
-        `;
-        detailList.appendChild(row);
-      });
+      // Ultrasonic Sensor Card
+      this.applyBadge(document.getElementById('us-sensor-badge'), evalResult.ultrasonicStatus);
+      this.applyBadge(document.getElementById('us-sensor-state-badge'), evalResult.ultrasonicStatus);
+      document.getElementById('us-blind-zone-label').textContent = cfg.ultrasonicBlindZoneCm;
+      document.getElementById('us-ref-height-label').textContent = cfg.tankRefHeightCm;
+
+      if (!online) {
+        document.getElementById('us-distance-val').textContent = '-- cm';
+        document.getElementById('us-height-val').textContent = '-- cm';
+        document.getElementById('us-pct-val').textContent = '--%';
+        document.getElementById('us-sensor-sub').textContent = 'Perangkat offline';
+      } else if (!tm.valid) {
+        document.getElementById('us-distance-val').textContent = tm.distanceCm !== null ? `${tm.distanceCm.toFixed(1)} cm` : 'ERR';
+        document.getElementById('us-height-val').textContent = 'ERR';
+        document.getElementById('us-pct-val').textContent = 'ERR';
+        document.getElementById('us-sensor-sub').textContent = tm.reason === 'blind_zone' ? 'Melewati batas blind zone' : 'Sinyal tidak valid';
+      } else {
+        document.getElementById('us-distance-val').textContent = `${tm.distanceCm.toFixed(1)} cm`;
+        document.getElementById('us-height-val').textContent = `${tm.heightCm.toFixed(1)} cm`;
+        document.getElementById('us-pct-val').textContent = `${tm.levelPct.toFixed(1)}%`;
+        document.getElementById('us-sensor-sub').textContent = 'Pembacaan valid';
+      }
+
+      const tandonRangeLabels = { '1h': '1 Jam Terakhir', '24h': '24 Jam Terakhir', '7d': '7 Hari Terakhir', '30d': '30 Hari Terakhir' };
+      const tandonLbl = document.getElementById('tandon-chart-range-label');
+      if (tandonLbl) tandonLbl.textContent = `Rentang: ${tandonRangeLabels[SensorStore.tandonRange]}`;
 
       // Flow INLET & OUTLET
       document.getElementById('inlet-flow-rate').textContent = c.inletFlow.toFixed(1);
@@ -1124,6 +1236,7 @@
     bindSlider('slider-level', (v) => {
       SensorStore.current.waterLevelRaw = v;
       SensorStore.targets.waterLevelRaw = v;
+      SensorStore.current.ultrasonicDistanceCm = +(SensorStore.config.tankRefHeightCm * (1 - v / 100)).toFixed(1);
       document.getElementById('val-slider-level').textContent = `${Math.round(v)}%`;
     });
 
@@ -1182,6 +1295,14 @@
   }
 
   function setupHistoryAndNotifications() {
+    document.querySelectorAll('#tandon-range-group button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#tandon-range-group button').forEach((b) => b.classList.toggle('active', b === btn));
+        SensorStore.tandonRange = btn.getAttribute('data-range');
+        App.refreshAll();
+      });
+    });
+
     document.querySelectorAll('#history-filter-group button').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('#history-filter-group button').forEach((b) => b.classList.toggle('active', b === btn));
@@ -1241,6 +1362,9 @@
     document.getElementById('btn-save-settings').addEventListener('click', () => {
       const cfg = SensorStore.config;
       cfg.tankCapacityL = Math.max(250, parseInt(document.getElementById('cfg-tank-cap').value, 10) || 1000);
+      cfg.tankRefHeightCm = Math.max(60, parseInt(document.getElementById('cfg-tank-ref-height').value, 10) || 120);
+      cfg.tankLowWarnPct = Math.max(5, Math.min(45, parseInt(document.getElementById('cfg-tank-low-warn').value, 10) || 25));
+      cfg.tankHighWarnPct = Math.max(70, Math.min(98, parseInt(document.getElementById('cfg-tank-high-warn').value, 10) || 85));
       cfg.septicCapacityL = Math.max(500, parseInt(document.getElementById('cfg-septic-cap').value, 10) || 2000);
       cfg.septicHeightCm = Math.max(80, parseInt(document.getElementById('cfg-septic-height').value, 10) || 150);
       cfg.ecToTdsFactor = Math.max(0.45, Math.min(0.75, parseFloat(document.getElementById('cfg-tds-factor').value) || 0.50));
@@ -1252,6 +1376,7 @@
       cfg.deviceOnline = document.getElementById('cfg-device-online').value === 'online';
       cfg.simulatedErrorSensor = document.getElementById('cfg-sensor-error').value;
 
+      SensorStore.current.ultrasonicDistanceCm = +(cfg.tankRefHeightCm * (1 - SensorStore.current.waterLevelRaw / 100)).toFixed(1);
       SensorStore.current.tds = Math.round(SensorStore.current.ec * cfg.ecToTdsFactor);
       if (SensorStore.simulationRunning) SimulationEngine.start();
       StatusEvaluator.emitNotification('cfg_saved', 'info', 'Pengaturan Diterapkan', 'Konfigurasi tandon, ambang batas, dan parameter simulasi diperbarui.');
@@ -1261,6 +1386,9 @@
     document.getElementById('btn-reset-settings').addEventListener('click', () => {
       SensorStore.config = { ...DEFAULT_CONFIG };
       document.getElementById('cfg-tank-cap').value = DEFAULT_CONFIG.tankCapacityL;
+      document.getElementById('cfg-tank-ref-height').value = DEFAULT_CONFIG.tankRefHeightCm;
+      document.getElementById('cfg-tank-low-warn').value = DEFAULT_CONFIG.tankLowWarnPct;
+      document.getElementById('cfg-tank-high-warn').value = DEFAULT_CONFIG.tankHighWarnPct;
       document.getElementById('cfg-septic-cap').value = DEFAULT_CONFIG.septicCapacityL;
       document.getElementById('cfg-septic-height').value = DEFAULT_CONFIG.septicHeightCm;
       document.getElementById('cfg-tds-factor').value = DEFAULT_CONFIG.ecToTdsFactor;
@@ -1271,6 +1399,7 @@
       document.getElementById('cfg-sim-interval').value = String(DEFAULT_CONFIG.simIntervalMs);
       document.getElementById('cfg-device-online').value = 'online';
       document.getElementById('cfg-sensor-error').value = 'none';
+      SensorStore.current.ultrasonicDistanceCm = +(DEFAULT_CONFIG.tankRefHeightCm * (1 - SensorStore.current.waterLevelRaw / 100)).toFixed(1);
       if (SensorStore.simulationRunning) SimulationEngine.start();
       App.refreshAll();
     });

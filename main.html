@@ -138,7 +138,7 @@
                   <div class="card-icon"><i data-lucide="waves" style="width: 18px; height: 18px;"></i></div>
                   <div>
                     <h4 class="card-title">Ketinggian Air</h4>
-                    <p class="card-subtitle">Sensor Kapasitif 4-Titik</p>
+                    <p class="card-subtitle">Sensor Ultrasonik</p>
                   </div>
                 </div>
                 <span id="kpi-water-badge" class="status-badge status-normal">Normal</span>
@@ -264,102 +264,129 @@
           <div class="section-header">
             <div>
               <h3>Monitoring Tandon Air</h3>
-              <p>Deteksi level air dengan sensor kapasitif eksternal 4-titik dan pemantauan debit inlet/outlet.</p>
+              <p>Kondisi volume tandon, pengukuran sensor ultrasonik, dan debit aliran air secara real-time.</p>
+            </div>
+            <div class="pill-badge tabular-nums" title="Waktu pembaruan data terakhir">
+              <i data-lucide="clock" style="width: 13px; height: 13px;"></i>
+              <span>Pembaruan: <strong id="tandon-last-update">--:--:--</strong></span>
             </div>
           </div>
 
-          <div class="notice-banner info">
-            <i data-lucide="info"></i>
-            <div>
-              <strong>Metode Pengukuran Diskrit:</strong> Sensor kapasitif dipasang pada 4 titik ketinggian dinding luar tandon (25%, 50%, 75%, 100%). Pembacaan sistem merepresentasikan rentang ketinggian berdasarkan titik sensor aktif, dan volume air ditampilkan sebagai <strong>nilai estimasi</strong>.
-            </div>
-          </div>
-
+          <!-- A. Ringkasan Kondisi Tandon & B. Pengukuran Sensor Ultrasonik -->
           <div class="grid-2-1">
-            <!-- Water Level Card -->
             <div class="card">
               <div class="card-header">
                 <div>
-                  <h4 class="card-title">Visualisasi &amp; Status Level Tandon</h4>
-                  <p class="card-subtitle">Kapasitas maksimal terkonfigurasi: <span id="tandon-max-cap-label">1.000</span> L</p>
+                  <h4 class="card-title">Ringkasan Kondisi Tandon</h4>
+                  <p class="card-subtitle">Kapasitas maksimum <span id="tandon-max-cap-label">1.000</span> L</p>
                 </div>
                 <span id="tandon-status-badge" class="status-badge status-normal">Normal</span>
               </div>
 
               <div class="tank-layout">
                 <div class="tank-visual-wrap">
-                  <div class="tank-cylinder" aria-label="Visualisasi Tangki Air">
-                    <div class="tank-level-line" style="bottom: 25%;"></div>
-                    <div class="tank-level-line" style="bottom: 50%;"></div>
-                    <div class="tank-level-line" style="bottom: 75%;"></div>
-                    <div id="tandon-water-fill" class="tank-water" style="height: 75%;">
-                      <div class="tank-water-surface"></div>
+                  <div class="tank-ultrasonic-mount" title="Sensor Ultrasonik Waterproof">
+                    <div class="ultrasonic-head">
+                      <i data-lucide="radio" style="width: 12px; height: 12px;"></i>
+                      <span>Ultrasonik</span>
                     </div>
-                    <div class="tank-level-label">
-                      <strong class="tabular-nums" id="tandon-visual-pct">75%</strong>
-                    </div>
+                    <div class="ultrasonic-transducer"></div>
                   </div>
-
-                  <div class="tank-sensors-rail" aria-label="Titik Sensor Kapasitif">
-                    <div class="sensor-node-pill active" id="cap-node-25">
-                      <span class="dot dot-success"></span>
-                      <span>25%</span>
+                  <div class="tank-visual-row">
+                    <div class="tank-cylinder" aria-label="Visualisasi Tangki Air">
+                      <div class="tank-level-line" style="bottom: 25%;"></div>
+                      <div class="tank-level-line" style="bottom: 50%;"></div>
+                      <div class="tank-level-line" style="bottom: 75%;"></div>
+                      <div id="tandon-beam-zone" class="ultrasonic-beam-zone" style="height: 22%;">
+                        <div class="ultrasonic-beam-line"></div>
+                        <span class="ultrasonic-dist-tag tabular-nums" id="tandon-visual-dist">26 cm</span>
+                        <div class="ultrasonic-beam-line"></div>
+                      </div>
+                      <div id="tandon-water-fill" class="tank-water" style="height: 78%;">
+                        <div class="tank-water-surface"></div>
+                      </div>
+                      <div class="tank-level-label">
+                        <strong class="tabular-nums" id="tandon-visual-pct">78%</strong>
+                      </div>
                     </div>
-                    <div class="sensor-node-pill active" id="cap-node-50">
-                      <span class="dot dot-success"></span>
-                      <span>50%</span>
-                    </div>
-                    <div class="sensor-node-pill active" id="cap-node-75">
-                      <span class="dot dot-success"></span>
-                      <span>75%</span>
-                    </div>
-                    <div class="sensor-node-pill inactive" id="cap-node-100">
-                      <span class="dot dot-neutral"></span>
+                    <div class="tank-scale-rail" aria-hidden="true">
                       <span>100%</span>
+                      <span>75%</span>
+                      <span>50%</span>
+                      <span>25%</span>
+                      <span>0%</span>
                     </div>
                   </div>
                 </div>
 
                 <div class="tank-metrics-grid">
                   <div class="metric-box">
-                    <label>Level Terdeteksi (Diskrit)</label>
-                    <div class="val tabular-nums" id="tandon-detected-pct">75%</div>
-                    <div class="sub" id="tandon-sensor-range">Rentang: 75% – 99%</div>
+                    <label>Persentase Ketinggian Air</label>
+                    <div class="val tabular-nums" id="tandon-detected-pct">78%</div>
+                    <div class="sub" id="tandon-level-note">Kondisi air mencukupi</div>
                   </div>
                   <div class="metric-box">
                     <label>Estimasi Volume Air</label>
-                    <div class="val tabular-nums" id="tandon-est-vol">~750 L</div>
-                    <div class="sub">Ditandai sebagai estimasi</div>
+                    <div class="val tabular-nums" id="tandon-est-vol">780 L</div>
+                    <div class="sub">Dari <span id="tandon-max-vol">1.000 L</span></div>
                   </div>
                   <div class="metric-box">
-                    <label>Kapasitas Maksimal</label>
-                    <div class="val tabular-nums" id="tandon-max-vol">1.000 L</div>
-                    <div class="sub">Tangki Atas (Roof Tank)</div>
+                    <label>Kapasitas Maksimum</label>
+                    <div class="val tabular-nums" id="tandon-max-vol-box">1.000 L</div>
+                    <div class="sub">Tinggi acuan <span id="tandon-ref-height-label">120</span> cm</div>
                   </div>
                   <div class="metric-box">
                     <label>Status Pengisian</label>
-                    <div class="val" id="tandon-fill-status">Normal</div>
-                    <div class="sub" id="tandon-fill-sub">Pompa inlet siaga</div>
+                    <div class="val" id="tandon-fill-status">Mengisi</div>
+                    <div class="sub" id="tandon-fill-sub">Debit masuk 11.8 L/min</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Capacitive Nodes Detail Card -->
+            <!-- B. Pengukuran Sensor Ultrasonik -->
             <div class="card">
               <div class="card-header">
                 <div>
-                  <h4 class="card-title">Status Titik Sensor Kapasitif</h4>
-                  <p class="card-subtitle">Non-kontak eksternal pada dinding tandon</p>
+                  <h4 class="card-title">Sensor Ultrasonik</h4>
+                  <p class="card-subtitle">Waterproof · Terpasang di atas tandon</p>
                 </div>
+                <span id="us-sensor-badge" class="status-badge status-normal">Aktif</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 10px;" id="capacitive-detail-list">
-                <!-- Populated by JS -->
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="metric-box" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <label style="margin-bottom: 2px;">Jarak ke Permukaan Air</label>
+                    <div class="sub">Blind zone &lt; <span id="us-blind-zone-label">10</span> cm</div>
+                  </div>
+                  <div class="val tabular-nums" id="us-distance-val">26.4 cm</div>
+                </div>
+                <div class="metric-box" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <label style="margin-bottom: 2px;">Ketinggian Air Terhitung</label>
+                    <div class="sub">Acuan <span id="us-ref-height-label">120</span> cm</div>
+                  </div>
+                  <div class="val tabular-nums" id="us-height-val">93.6 cm</div>
+                </div>
+                <div class="metric-box" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <label style="margin-bottom: 2px;">Persentase Level Air</label>
+                    <div class="sub">Pengukuran kontinu</div>
+                  </div>
+                  <div class="val tabular-nums" id="us-pct-val">78.0%</div>
+                </div>
+                <div class="metric-box" style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <label style="margin-bottom: 2px;">Status Sensor</label>
+                    <div class="sub" id="us-sensor-sub">Pembacaan valid</div>
+                  </div>
+                  <span id="us-sensor-state-badge" class="status-badge status-normal">Aktif</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Water Flow Monitoring -->
+          <!-- C. Monitoring Aliran Air -->
           <div class="grid-2">
             <div class="card">
               <div class="card-header">
@@ -367,7 +394,7 @@
                   <div class="card-icon"><i data-lucide="arrow-down-to-line" style="width: 18px; height: 18px;"></i></div>
                   <div>
                     <h4 class="card-title">INLET (Air Masuk)</h4>
-                    <p class="card-subtitle">Sensor aliran pipa suplai PDAM / sumur</p>
+                    <p class="card-subtitle">Aliran suplai menuju tandon</p>
                   </div>
                 </div>
                 <span id="inlet-status-badge" class="status-badge status-info">Mengalir</span>
@@ -375,7 +402,7 @@
               <div class="tank-metrics-grid">
                 <div class="metric-box">
                   <label>Debit Air Masuk</label>
-                  <div class="val tabular-nums"><span id="inlet-flow-rate">12.4</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
+                  <div class="val tabular-nums"><span id="inlet-flow-rate">11.8</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
                 </div>
                 <div class="metric-box">
                   <label>Total Volume Masuk</label>
@@ -390,7 +417,7 @@
                   <div class="card-icon"><i data-lucide="arrow-up-from-line" style="width: 18px; height: 18px;"></i></div>
                   <div>
                     <h4 class="card-title">OUTLET (Air Keluar)</h4>
-                    <p class="card-subtitle">Sensor aliran distribusi ke instalasi rumah</p>
+                    <p class="card-subtitle">Distribusi penggunaan rumah tangga</p>
                   </div>
                 </div>
                 <span id="outlet-status-badge" class="status-badge status-info">Mengalir</span>
@@ -398,7 +425,7 @@
               <div class="tank-metrics-grid">
                 <div class="metric-box">
                   <label>Debit Air Keluar</label>
-                  <div class="val tabular-nums"><span id="outlet-flow-rate">8.2</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
+                  <div class="val tabular-nums"><span id="outlet-flow-rate">7.4</span> <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">L/min</span></div>
                 </div>
                 <div class="metric-box">
                   <label>Total Volume Penggunaan</label>
@@ -408,15 +435,33 @@
             </div>
           </div>
 
+          <!-- D. Grafik Monitoring Tandon -->
           <div class="card">
-            <div class="card-header">
+            <div class="card-header" style="flex-wrap: wrap;">
               <div>
-                <h4 class="card-title">Grafik Debit Air Masuk &amp; Keluar</h4>
-                <p class="card-subtitle">Perbandingan laju aliran inlet dan outlet (L/min)</p>
+                <h4 class="card-title">Grafik Monitoring Tandon</h4>
+                <p class="card-subtitle" id="tandon-chart-range-label">Rentang: 1 Jam Terakhir</p>
+              </div>
+              <div class="filter-group" id="tandon-range-group">
+                <button class="btn btn-sm active" data-range="1h">1 Jam</button>
+                <button class="btn btn-sm" data-range="24h">24 Jam</button>
+                <button class="btn btn-sm" data-range="7d">7 Hari</button>
+                <button class="btn btn-sm" data-range="30d">30 Hari</button>
               </div>
             </div>
-            <div class="chart-container lg">
-              <canvas id="chart-tandon-flow"></canvas>
+            <div class="grid-2" style="margin-bottom: 0;">
+              <div>
+                <div style="font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Perubahan Ketinggian Air (%)</div>
+                <div class="chart-container">
+                  <canvas id="chart-tandon-level"></canvas>
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Debit Air Masuk &amp; Keluar (L/min)</div>
+                <div class="chart-container">
+                  <canvas id="chart-tandon-flow"></canvas>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -857,6 +902,19 @@
                   <div class="hint">Digunakan untuk menghitung estimasi volume tandon.</div>
                 </div>
                 <div class="form-field">
+                  <label for="cfg-tank-ref-height">Tinggi Acuan Tandon (cm)</label>
+                  <input type="number" id="cfg-tank-ref-height" min="60" max="400" step="5" value="120" />
+                  <div class="hint">Jarak sensor ultrasonik ke dasar tandon.</div>
+                </div>
+                <div class="form-field">
+                  <label for="cfg-tank-low-warn">Batas Peringatan Level Rendah (%)</label>
+                  <input type="number" id="cfg-tank-low-warn" min="5" max="45" step="5" value="25" />
+                </div>
+                <div class="form-field">
+                  <label for="cfg-tank-high-warn">Batas Peringatan Level Penuh (%)</label>
+                  <input type="number" id="cfg-tank-high-warn" min="70" max="98" step="1" value="85" />
+                </div>
+                <div class="form-field">
                   <label for="cfg-septic-cap">Kapasitas Tangki Septik (L)</label>
                   <input type="number" id="cfg-septic-cap" min="500" max="10000" step="100" value="2000" />
                 </div>
@@ -927,6 +985,7 @@
                 <label for="cfg-sensor-error">Simulasi Sensor Error</label>
                 <select id="cfg-sensor-error">
                   <option value="none" selected>Tidak Ada (Semua Sensor Normal)</option>
+                  <option value="ultrasonic">Sensor Ultrasonik Tandon Error</option>
                   <option value="turbidity">Turbidity Sensor Error</option>
                   <option value="ph">pH Sensor Error</option>
                   <option value="ec">EC / TDS Sensor Error</option>
