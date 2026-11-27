@@ -3110,7 +3110,7 @@ input[type="range"] {
                 else decimals = 1;
 
                 const formatted = numericValue.toFixed(decimals)
-                  .replace(/\\.?0+$/, '');
+                  .replace(/(\\.\\d*?[1-9])0+$|\\.0+$/, '$1');
                 return unitLabel ? `${formatted} ${unitLabel}` : formatted;
               }
             }
