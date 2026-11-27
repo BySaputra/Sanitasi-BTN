@@ -3087,7 +3087,8 @@ input[type="range"] {
             ticks: {
               color: '#94A3B0',
               font: { size: 10 },
-              maxTicksLimit: 6
+              maxTicksLimit: 5,
+              maxRotation: 0
             }
           },
           y: {
@@ -3095,7 +3096,23 @@ input[type="range"] {
             ticks: {
               color: '#71808C',
               font: { size: 10 },
-              callback: (v) => (unitLabel ? `${v} ${unitLabel}` : v)
+              maxTicksLimit: 5,
+              precision: 0,
+              callback: (v) => {
+                const numericValue = Number(v);
+                if (!Number.isFinite(numericValue)) return v;
+
+                // Keep axis labels compact and prevent floating-point artifacts.
+                let decimals = 0;
+                if (unitLabel === '°C' || unitLabel === 'L/m') decimals = 1;
+                else if (unitLabel === '' || unitLabel === 'NTU') decimals = 2;
+                else if (unitLabel === '%') decimals = 0;
+                else decimals = 1;
+
+                const formatted = numericValue.toFixed(decimals)
+                  .replace(/\\.?0+$/, '');
+                return unitLabel ? `${formatted} ${unitLabel}` : formatted;
+              }
             }
           }
         },
